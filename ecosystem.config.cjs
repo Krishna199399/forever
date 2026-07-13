@@ -10,7 +10,7 @@ module.exports = {
       max_memory_restart: '1G',
       env_production: {
         NODE_ENV: 'production',
-        PORT: 5000,
+        PORT: 5001,
         // The following values should be overridden by actual environment variables on the VPS,
         // or set securely in the server's .env file.
       },
