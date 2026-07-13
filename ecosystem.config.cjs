@@ -3,6 +3,7 @@ module.exports = {
     {
       name: 'forever-us-api',
       script: './server/src/index.js',
+      node_args: '--dns-result-order=ipv4first',
       instances: 1, // Private app, single instance is sufficient
       autorestart: true,
       watch: false,

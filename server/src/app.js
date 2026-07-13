@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import mongoose from 'mongoose';
-import { Water, Sleep, Workout, Meal, Mood, Promise, LoveNote, WorkoutLibrary, WorkoutProgress, MealLibrary, MealProgress, DetailedSleepLog, CycleWellnessLog, Memory, AuditLog } from './models/index.js';
+import { Water, Sleep, Workout, Meal, Mood, Promise, LoveNote, WorkoutLibrary, WorkoutProgress, MealLibrary, MealProgress, DetailedSleepLog, CycleWellnessLog, Memory, AuditLog, Settings } from './models/index.js';
 
 const app = express();
 
@@ -618,11 +618,26 @@ app.delete('/api/memories/:id', async (req, res) => {
 
 // --- CAREGIVER PORTAL ROUTES ---
 
-// PIN Verification — checks against server-side env var, PIN never leaves the server
-app.post('/api/caregiver/verify-pin', (req, res) => {
+// Helper to get or seed caregiver PIN directly from MongoDB Settings collection
+const getCaregiverPinFromDB = async () => {
+  try {
+    let setting = await Settings.findOne({ key: 'caregiver_pin' });
+    if (!setting) {
+      const initialPin = String(process.env.CAREGIVER_PIN || '5678').trim();
+      setting = await Settings.create({ key: 'caregiver_pin', value: initialPin });
+    }
+    return String(setting.value).trim();
+  } catch (err) {
+    console.error('Failed to query PIN from DB, using fallback:', err);
+    return String(process.env.CAREGIVER_PIN || '5678').trim();
+  }
+};
+
+// PIN Verification — queries MongoDB Settings collection (seeds '5678' if empty)
+app.post('/api/caregiver/verify-pin', async (req, res) => {
   try {
     const pin = req.body && req.body.pin ? String(req.body.pin).trim() : '';
-    const correctPin = String(process.env.CAREGIVER_PIN || '5678').trim();
+    const correctPin = await getCaregiverPinFromDB();
     
     if (!pin) {
       return res.status(400).json({ error: 'PIN is required.' });
@@ -636,6 +651,28 @@ app.post('/api/caregiver/verify-pin', (req, res) => {
   } catch (error) {
     console.error('Verify PIN Error:', error);
     return res.status(500).json({ error: 'Failed to verify PIN' });
+  }
+});
+
+// Update PIN route — updates PIN in MongoDB Settings collection
+app.post('/api/caregiver/update-pin', async (req, res) => {
+  try {
+    const { currentPin, newPin } = req.body || {};
+    const correctPin = await getCaregiverPinFromDB();
+    if (String(currentPin).trim() !== correctPin) {
+      return res.status(401).json({ error: 'Current PIN is incorrect.' });
+    }
+    if (!newPin || String(newPin).trim().length < 4) {
+      return res.status(400).json({ error: 'New PIN must be at least 4 digits.' });
+    }
+    await Settings.findOneAndUpdate(
+      { key: 'caregiver_pin' },
+      { value: String(newPin).trim() },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true, message: 'PIN updated successfully in database.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update PIN in database.' });
   }
 });
 

@@ -218,3 +218,12 @@ const AuditLogSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 export const AuditLog = mongoose.model('AuditLog', AuditLogSchema);
+
+// Settings Schema (for system config like Caregiver PIN in MongoDB)
+const SettingsSchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true },
+  value: { type: String, required: true }
+}, { timestamps: true });
+
+export const Settings = mongoose.model('Settings', SettingsSchema);
+
