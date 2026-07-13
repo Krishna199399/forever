@@ -74,18 +74,28 @@ export const CaregiverPortal: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
 
-  const CORRECT_PIN = '5678'; // Simple passcode entry as specified in the approved plan
+  const [verifyingPin, setVerifyingPin] = useState(false);
 
-  const handlePinSubmit = (e: React.FormEvent) => {
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcode === CORRECT_PIN) {
-      setIsAuthenticated(true);
-      setAuthError('');
-      loadCaregiverLogs();
-      loadAuditLogs();
-    } else {
-      setAuthError('Incorrect Passcode. Access Denied.');
+    if (!passcode || passcode.length < 4) {
+      setAuthError('Please enter the 4-digit PIN.');
+      return;
+    }
+    try {
+      setVerifyingPin(true);
+      const res = await api.post('/api/caregiver/verify-pin', { pin: passcode });
+      if (res.data?.success) {
+        setIsAuthenticated(true);
+        setAuthError('');
+        loadCaregiverLogs();
+        loadAuditLogs();
+      }
+    } catch (err: any) {
+      setAuthError(err?.message || 'Incorrect Passcode. Access Denied.');
       setPasscode('');
+    } finally {
+      setVerifyingPin(false);
     }
   };
 
@@ -176,9 +186,10 @@ export const CaregiverPortal: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-primary-love text-white font-semibold text-xs tracking-widest uppercase rounded-2xl hover:bg-primary-love/90 shadow-md cursor-pointer"
+                disabled={verifyingPin}
+                className="w-full py-3.5 bg-primary-love text-white font-semibold text-xs tracking-widest uppercase rounded-2xl hover:bg-primary-love/90 shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-wait"
               >
-                Access Dashboard
+                {verifyingPin ? 'Verifying…' : 'Access Dashboard'}
               </button>
             </form>
           </GlassCard>

@@ -12,8 +12,10 @@ const app = express();
 // Falls back to localhost for local development.
 const allowedOrigins = [
   process.env.CORS_ORIGIN || 'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175'
+  // Allow extra dev ports only outside of production
+  ...(process.env.NODE_ENV !== 'production'
+    ? ['http://localhost:5174', 'http://localhost:5175']
+    : [])
 ];
 app.use(cors({
   origin: (origin, callback) => {
@@ -615,6 +617,20 @@ app.delete('/api/memories/:id', async (req, res) => {
 });
 
 // --- CAREGIVER PORTAL ROUTES ---
+
+// PIN Verification — checks against server-side env var, PIN never leaves the server
+app.post('/api/caregiver/verify-pin', (req, res) => {
+  const { pin } = req.body;
+  const correctPin = process.env.CAREGIVER_PIN || '5678';
+  if (!pin) {
+    return res.status(400).json({ error: 'PIN is required.' });
+  }
+  if (pin === correctPin) {
+    return res.json({ success: true });
+  }
+  return res.status(401).json({ success: false, error: 'Incorrect PIN. Access Denied.' });
+});
+
 app.get('/api/caregiver/activities', async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 14;
