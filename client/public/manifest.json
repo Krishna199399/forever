@@ -1,0 +1,38 @@
+{
+  "name": "Forever Us — Wellness Companion",
+  "short_name": "Forever Us",
+  "description": "A private wellness companion built with love — cycles, workouts, meals, sleep, and memories.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFF9FC",
+  "theme_color": "#F472B6",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Her Journey",
+      "short_name": "Journey",
+      "description": "Track cycles and wellness",
+      "url": "/journey",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "For You ❤️",
+      "short_name": "Love Notes",
+      "description": "Open love letters",
+      "url": "/for-you",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ],
+  "screenshots": []
+}
+

@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-bg-base: #FFF9FC;
+  --color-bg-secondary: #FFF3F8;
+  --color-primary-love: #F472B6;
+  --color-accent-love: #C084FC;
+  --color-success-love: #6BCB77;
+  --color-text-dark: #2D2D2D;
+  --color-text-sub: #777777;
+
+  /* Gradient stops */
+  --color-grad-pink: #FFF0F6;
+  --color-grad-lavender: #F3E8FF;
+  --color-grad-peach: #FFFAF0;
+
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Poppins", sans-serif;
+}
+
+@layer utilities {
+  .bg-glass {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  .bg-glass-card {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .border-glass {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .border-glass-subtle {
+    border: 1px solid rgba(244, 114, 182, 0.15);
+  }
+
+  .shadow-glass {
+    box-shadow: 0 8px 32px 0 rgba(244, 114, 182, 0.08);
+  }
+
+  .shadow-glass-hover {
+    box-shadow: 0 12px 40px 0 rgba(244, 114, 182, 0.15);
+  }
+
+  /* Handwritten fonts for romantic feel */
+  .font-handwritten {
+    font-family: "Playfair Display", Georgia, serif;
+    font-style: italic;
+  }
+}
+
+/* Custom Base resets to integrate fonts and defaults */
+@layer base {
+  body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-dark);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+  }
+
+  button, input, select, textarea {
+    font-family: var(--font-display);
+  }
+}
+
+/* Beautiful slow animating gradients and floating backgrounds */
+@keyframes float-slow {
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+}
+
+@keyframes float-reverse {
+  0% {
+    transform: translateY(0px) scale(1.05);
+  }
+  50% {
+    transform: translateY(15px) scale(0.95);
+  }
+  100% {
+    transform: translateY(0px) scale(1.05);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-float-1 {
+  animation: float-slow 15s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-reverse 18s ease-in-out infinite;
+}
+
+.animate-float-3 {
+  animation: float-slow 22s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 8s ease-in-out infinite;
+}
+
+/* Hide scrollbar for all browsers while keeping scroll functionality */
+::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>❤️ Forever Us ❤️ — Private Wellness Companion</title>
+
+    <!-- Primary SEO -->
+    <meta name="description" content="A private wellness companion built with love — track cycles, workouts, meals, sleep, and memories all in one beautiful place." />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#F472B6" />
+
+    <!-- Open Graph (for sharing previews) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Forever Us ❤️ — Private Wellness Companion" />
+    <meta property="og:description" content="A private wellness companion built with love — track your cycles, workouts, meals, sleep, and shared memories." />
+    <meta property="og:image" content="/og-preview.png" />
+    <meta property="og:site_name" content="Forever Us" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Forever Us ❤️" />
+    <meta name="twitter:description" content="Private wellness companion built with love." />
+    <meta name="twitter:image" content="/og-preview.png" />
+
+    <!-- Favicon & PWA Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple PWA meta -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Forever Us" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Performance: preconnect to Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            console.log('✅ ServiceWorker registered:', reg.scope);
+          }).catch((err) => {
+            console.warn('ServiceWorker registration failed:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
+
