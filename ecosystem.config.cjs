@@ -11,8 +11,7 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 5001,
-        // The following values should be overridden by actual environment variables on the VPS,
-        // or set securely in the server's .env file.
+        CORS_ORIGIN: 'https://sinchu.live',
       },
       error_file: './logs/err.log',
       out_file: './logs/out.log',
