@@ -7,24 +7,11 @@ import {
   Sparkles,
   ChevronRight,
   MessageCircleHeart,
-  Mail,
   Search,
   Bookmark,
-  Plus,
-  Trash2,
-  Calendar,
   Clock,
   Volume2,
-  Video,
   X,
-  Filter,
-  TrendingUp,
-  Award,
-  CheckCircle,
-  Eye,
-  Send,
-  Lock,
-  Unlock,
   Bell
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -39,100 +26,27 @@ interface LoveLetterItem {
   emoji?: string;
   bgTheme?: 'Rose' | 'Lavender' | 'Cream' | 'Midnight' | 'Sunset';
   fontStyle?: 'Handwritten' | 'Serif' | 'Sans';
-  priority?: 'Normal' | 'High' | 'Urgent';
+  priority?: 'Low' | 'Normal' | 'High' | 'Urgent';
   coverImage?: string;
   music?: string;
   video?: string;
   voiceNote?: string;
-  published?: boolean;
+  published: boolean;
   deliveryOption?: 'Immediate' | 'Scheduled' | 'Recurring';
   scheduledAt?: string;
-  recurrence?: 'None' | 'Every Morning' | 'Every Night' | 'Weekly' | 'Monthly';
-  readStatus?: 'Unread' | 'Read';
-  readAt?: string;
-  favorite?: boolean;
-  archived?: boolean;
-  reaction?: '❤️' | '😊' | '🥹' | '🌸' | '⭐' | 'None';
+  recurrence?: 'None' | 'Daily' | 'Weekly' | 'Monthly';
   tags?: string[];
+  readStatus?: 'Unread' | 'Read';
+  favorite?: boolean;
+  reaction?: '❤️' | '😊' | '🥹' | '🌸' | '⭐' | 'None';
+  createdBy?: string;
   createdAt?: string;
 }
 
-const CATEGORIES = [
-  'All',
-  'Love Letter',
-  'Morning Motivation',
-  'Workout Motivation',
-  'Meal Reminder',
-  'Water Reminder',
-  'Sleep Reminder',
-  'Special Day',
-  'Birthday',
-  'Anniversary',
-  'Achievement',
-  'Custom'
-];
-
-const REACTION_OPTIONS = ['❤️', '😊', '🥹', '🌸', '⭐'];
-
-const TEMPLATES = [
-  {
-    title: "Good Morning, My Love ❤️",
-    subtitle: "A soft start to a wonderful day.",
-    category: "Morning Motivation",
-    mood: "Sweet",
-    emoji: "🌅",
-    content: "Good morning, beautiful! I hope you woke up feeling rested and peaceful. Remember to sip a warm glass of water and take things one gentle step at a time today. I love you so much.",
-    bgTheme: "Rose",
-    fontStyle: "Handwritten"
-  },
-  {
-    title: "Hydration Reminder 💧",
-    subtitle: "Take care of your body today.",
-    category: "Water Reminder",
-    mood: "Caring",
-    emoji: "💧",
-    content: "Here is your gentle love reminder to drink a full cup of water right now! Your skin, energy, and body deserve all the nourishment today. Stay glowing, my girl.",
-    bgTheme: "Cream",
-    fontStyle: "Sans"
-  },
-  {
-    title: "Don't Forget Breakfast 🍳",
-    subtitle: "Nourish yourself with love.",
-    category: "Meal Reminder",
-    mood: "Caring",
-    emoji: "🥐",
-    content: "Please make sure to eat a warm, wholesome breakfast. Fueling your energy keeps your hormone health in balance and your smile bright. Bon appétit, sweetheart!",
-    bgTheme: "Cream",
-    fontStyle: "Serif"
-  },
-  {
-    title: "I Am So Proud of You 🏆",
-    subtitle: "You achieved something special today.",
-    category: "Achievement",
-    mood: "Inspiring",
-    emoji: "⭐",
-    content: "Whatever you accomplished today—big or small—I am cheering for you from the bottom of my heart. You continue to amaze me with your grace and perseverance.",
-    bgTheme: "Lavender",
-    fontStyle: "Handwritten"
-  },
-  {
-    title: "Sleep Peacefully, My Heart 🌙",
-    subtitle: "Time to rest your mind and body.",
-    category: "Sleep Reminder",
-    mood: "Romantic",
-    emoji: "🌙",
-    content: "Put your phone away, dim the lights, and let go of today's worries. You did more than enough today. Sweet dreams, my forever love.",
-    bgTheme: "Midnight",
-    fontStyle: "Serif"
-  }
-];
-
 export const ForYou: React.FC = () => {
   // --- STATE ---
-  const [activeTab, setActiveTab] = useState<'Girlfriend' | 'Admin'>('Girlfriend');
   const [letters, setLetters] = useState<LoveLetterItem[]>([]);
   const [todayLetter, setTodayLetter] = useState<LoveLetterItem | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Envelope & Reading State
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
@@ -144,40 +58,9 @@ export const ForYou: React.FC = () => {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
-  // Admin Form & Analytics
-  const [adminSection, setAdminSection] = useState<'Dashboard' | 'Create' | 'All' | 'Templates' | 'Analytics'>('Dashboard');
-  const [analytics, setAnalytics] = useState<any>(null);
-  
-  // New Letter Form State
-  const [formLetter, setFormLetter] = useState<Partial<LoveLetterItem>>({
-    title: '',
-    subtitle: '',
-    content: '',
-    category: 'Love Letter',
-    mood: 'Romantic',
-    emoji: '❤️',
-    bgTheme: 'Rose',
-    fontStyle: 'Handwritten',
-    priority: 'Normal',
-    coverImage: '',
-    video: '',
-    voiceNote: '',
-    published: true,
-    deliveryOption: 'Immediate',
-    scheduledAt: '',
-    recurrence: 'None',
-    tags: []
-  });
-
-  // Admin PIN Protection State
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
-
   // Load Data
   const fetchLetters = async () => {
     try {
-      setLoading(true);
       const res = await api.get('/api/letters');
       if (res.data) {
         setLetters(res.data);
@@ -187,15 +70,8 @@ export const ForYou: React.FC = () => {
       if (todayRes.data) {
         setTodayLetter(todayRes.data);
       }
-
-      const analyticsRes = await api.get('/api/letters/analytics');
-      if (analyticsRes.data) {
-        setAnalytics(analyticsRes.data);
-      }
     } catch (e) {
       console.log('API Offline. Using standalone letter state.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -255,347 +131,288 @@ export const ForYou: React.FC = () => {
     }
   };
 
-  const handleCreateLetter = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formLetter.title || !formLetter.content) return;
-
-    try {
-      const res = await api.post('/api/letters', formLetter);
-      if (res.data) {
-        setLetters((prev) => [res.data, ...prev]);
-        setFormLetter({
-          title: '',
-          subtitle: '',
-          content: '',
-          category: 'Love Letter',
-          mood: 'Romantic',
-          emoji: '❤️',
-          bgTheme: 'Rose',
-          fontStyle: 'Handwritten',
-          priority: 'Normal',
-          coverImage: '',
-          video: '',
-          voiceNote: '',
-          published: true,
-          deliveryOption: 'Immediate',
-          scheduledAt: '',
-          recurrence: 'None',
-          tags: []
-        });
-        setAdminSection('All');
-        fetchLetters();
-      }
-    } catch (err) {
-      console.log('Error creating letter:', err);
-    }
-  };
-
-  const handleDeleteLetter = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this letter?')) return;
-    try {
-      await api.delete(`/api/letters/${id}`);
-      setLetters((prev) => prev.filter((l) => l._id !== id));
-      if (todayLetter && todayLetter._id === id) {
-        setTodayLetter(null);
-      }
-    } catch (err) {
-      console.log('Error deleting letter:', err);
-    }
-  };
-
-  const handleUseTemplate = (tpl: typeof TEMPLATES[0]) => {
-    setFormLetter({
-      ...formLetter,
-      title: tpl.title,
-      subtitle: tpl.subtitle,
-      category: tpl.category as any,
-      mood: tpl.mood,
-      emoji: tpl.emoji,
-      content: tpl.content,
-      bgTheme: tpl.bgTheme as any,
-      fontStyle: tpl.fontStyle as any
-    });
-    setAdminSection('Create');
-  };
-
-  const handleVerifyPin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pinInput === '1234' || pinInput === '5201314') {
-      setAdminUnlocked(true);
-      setPinError(false);
-    } else {
-      setPinError(true);
-    }
-  };
-
-  // Filtered letters for memory timeline
+  // Filtered & Sorted Timeline Letters (Girlfriend View)
   const filteredLetters = useMemo(() => {
-    return letters.filter((letter) => {
-      const matchesSearch =
-        searchQuery === '' ||
-        letter.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        letter.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (letter.subtitle && letter.subtitle.toLowerCase().includes(searchQuery.toLowerCase()));
+    return letters
+      .filter((letter) => {
+        if (!letter.published) return false; // Girlfriend only sees published letters!
 
-      const matchesCat = selectedCategory === 'All' || letter.category === selectedCategory;
-      const matchesFav = !favoritesOnly || letter.favorite;
+        const matchesSearch =
+          letter.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          letter.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (letter.tags && letter.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
 
-      return matchesSearch && matchesCat && matchesFav;
-    }).sort((a, b) => {
-      const dA = new Date(a.createdAt || Date.now()).getTime();
-      const dB = new Date(b.createdAt || Date.now()).getTime();
-      return sortOrder === 'newest' ? dB - dA : dA - dB;
-    });
+        const matchesCategory = selectedCategory === 'All' || letter.category === selectedCategory;
+        const matchesFavorite = !favoritesOnly || letter.favorite;
+
+        return matchesSearch && matchesCategory && matchesFavorite;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || Date.now()).getTime();
+        const dateB = new Date(b.createdAt || Date.now()).getTime();
+        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      });
   }, [letters, searchQuery, selectedCategory, favoritesOnly, sortOrder]);
 
-  const unreadCount = useMemo(() => {
-    return letters.filter((l) => l.published && l.readStatus === 'Unread').length;
-  }, [letters]);
+  const categoriesList = ['All', 'Love Letter', 'Morning Motivation', 'Workout Motivation', 'Meal Reminder', 'Water Reminder', 'Sleep Reminder', 'Special Day', 'Achievement'];
 
-  // Background Theme Utility
   const getThemeClasses = (theme?: string) => {
     switch (theme) {
       case 'Lavender':
-        return 'from-purple-100/90 via-purple-50 to-pink-50 text-purple-950 border-purple-200/50';
+        return 'bg-gradient-to-br from-purple-100/80 via-pink-50/50 to-indigo-100/80 border-purple-200/50 text-purple-950';
       case 'Cream':
-        return 'from-amber-50 via-warm-white to-orange-50/60 text-amber-950 border-amber-200/50';
+        return 'bg-gradient-to-br from-amber-50 via-orange-50/40 to-yellow-50/60 border-amber-200/50 text-amber-950';
       case 'Midnight':
-        return 'from-slate-900 via-indigo-950 to-purple-950 text-slate-100 border-purple-500/30';
+        return 'bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950 border-purple-500/30 text-pink-100';
       case 'Sunset':
-        return 'from-orange-100/90 via-pink-100/70 to-rose-50 text-rose-950 border-rose-200/50';
+        return 'bg-gradient-to-br from-rose-100 via-orange-100 to-amber-100 border-rose-200 text-rose-950';
       case 'Rose':
       default:
-        return 'from-pink-100/90 via-rose-50 to-peach-50 text-rose-950 border-pink-200/50';
+        return 'bg-gradient-to-br from-pink-100/90 via-rose-50/60 to-red-100/60 border-pink-200/60 text-pink-950';
+    }
+  };
+
+  const getFontClass = (font?: string) => {
+    switch (font) {
+      case 'Serif':
+        return 'font-serif font-medium leading-relaxed tracking-wide';
+      case 'Sans':
+        return 'font-sans leading-relaxed';
+      case 'Handwritten':
+      default:
+        return 'font-serif italic leading-relaxed tracking-wide';
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-10 pb-24">
+    <div className="max-w-6xl mx-auto space-y-10 px-4 py-8 relative pb-28">
+      {/* Dynamic Header */}
+      <header className="text-center space-y-3 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-100/80 border border-primary-love/20 text-primary-love text-xs font-semibold tracking-wider uppercase backdrop-blur-md"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-primary-love animate-pulse" />
+          <span>Daily Love &amp; Messages Just For You</span>
+        </motion.div>
 
-      {/* --- PAGE HEADER --- */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-primary-love/10 pb-6">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-serif text-text-dark font-bold flex items-center gap-2">
-            ❤️ Daily Love Letters
-          </h1>
-          <p className="text-xs text-text-sub mt-1">
-            Handwritten affirmations, daily reminders, and private love letters.
-          </p>
-        </div>
-      </div>
+        <motion.h1
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="text-4xl sm:text-5xl font-serif font-bold text-text-dark tracking-tight"
+        >
+          Love Notes &amp; Daily Inspiration
+        </motion.h1>
 
-      {/* --- GIRLFRIEND EXPERIENCE VIEW --- */}
-      <div className="space-y-12">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-sm text-text-sub max-w-lg mx-auto font-sans"
+        >
+          Personal letters, motivational reminders, and sweet notes written with endless love.
+        </motion.p>
+      </header>
 
-          {/* --- UNREAD NOTIFICATION BANNER --- */}
-          {unreadCount > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500 text-white rounded-2xl shadow-lg flex items-center justify-between gap-4 cursor-pointer"
-              onClick={() => todayLetter && handleOpenLetter(todayLetter)}
-            >
+      {/* TODAY'S FEATURED LOVE LETTER */}
+      {todayLetter && (
+        <section className="relative z-10 max-w-3xl mx-auto">
+          <GlassCard className="p-8 relative overflow-hidden bg-gradient-to-br from-white/90 via-pink-50/40 to-rose-100/60 border-pink-200 shadow-xl rounded-[32px]">
+            {/* Background floating glow */}
+            <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-primary-love/15 blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 relative z-10">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-white/20 rounded-full animate-bounce">
-                  <Bell className="w-5 h-5 fill-white" />
-                </div>
+                <span className="text-3xl p-3 bg-pink-100/80 rounded-2xl border border-pink-200/60 shadow-sm">
+                  {todayLetter.emoji || '💌'}
+                </span>
                 <div>
-                  <h4 className="text-sm font-bold font-serif">You have a new Love Letter! ❤️</h4>
-                  <p className="text-xs text-white/90">Click to open your special daily message from your boyfriend.</p>
+                  <span className="text-[10px] font-bold text-primary-love tracking-widest uppercase bg-pink-100/60 px-2.5 py-0.5 rounded-full border border-pink-200/50">
+                    Today's Featured Message
+                  </span>
+                  <h2 className="text-2xl font-serif font-bold text-text-dark mt-1">
+                    {todayLetter.title}
+                  </h2>
                 </div>
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-3 py-1.5 rounded-full flex items-center gap-1">
-                Open Letter <ChevronRight className="w-4 h-4" />
+
+              {todayLetter.readStatus === 'Unread' && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-pink-600 bg-pink-100/80 border border-pink-300 px-3 py-1 rounded-full animate-pulse">
+                  <Bell className="w-3.5 h-3.5" /> New Unread Letter
+                </span>
+              )}
+            </div>
+
+            <p className="text-sm text-text-sub font-serif italic mb-6 line-clamp-3 leading-relaxed relative z-10">
+              "{todayLetter.content}"
+            </p>
+
+            <div className="flex items-center justify-between pt-4 border-t border-primary-love/10 relative z-10">
+              <span className="text-xs font-semibold text-text-sub flex items-center gap-1">
+                <Heart className="w-3.5 h-3.5 text-primary-love fill-primary-love" />
+                From Boyfriend with love
               </span>
-            </motion.div>
-          )}
 
-          {/* --- HERO: TODAY'S FEATURED ENVELOPE --- */}
-          <div className="flex flex-col items-center">
-            <span className="text-xs font-bold text-primary-love uppercase tracking-widest mb-3 flex items-center gap-1">
-              <Sparkles className="w-4 h-4" /> Today's Message
-            </span>
+              <button
+                onClick={() => handleOpenLetter(todayLetter)}
+                className="px-6 py-2.5 bg-primary-love text-white font-semibold text-xs rounded-full shadow-lg shadow-pink-500/20 hover:scale-105 transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              >
 
-            {todayLetter ? (
-              <div className="w-full max-w-xl relative">
-                {/* Envelope Outer Shadow */}
-                <div className="absolute inset-0 bg-primary-love/15 rounded-[36px] blur-2xl transform translate-y-4" />
+                <span>Open Envelope &amp; Read</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </GlassCard>
+        </section>
+      )}
 
-                <GlassCard
-                  animateHover={true}
-                  onClick={() => handleOpenLetter(todayLetter)}
-                  className="w-full min-h-[320px] bg-gradient-to-tr from-pink-50 via-white to-purple-50 border-2 border-primary-love/20 shadow-2xl flex flex-col justify-between p-8 text-center relative overflow-hidden group cursor-pointer"
-                >
-                  {/* Top Seal Tag */}
-                  <div className="flex justify-between items-center z-10 border-b border-primary-love/10 pb-4">
-                    <span className="text-[10px] font-bold text-primary-love uppercase tracking-wider bg-pink-100/80 px-3 py-1 rounded-full flex items-center gap-1">
-                      {todayLetter.category}
-                    </span>
-                    <span className="text-xs text-text-sub font-semibold flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-primary-love" />
-                      {todayLetter.createdAt ? new Date(todayLetter.createdAt).toLocaleDateString() : 'Today'}
-                    </span>
-                  </div>
-
-                  {/* 3D Envelope Wax Seal Central Icon */}
-                  <div className="my-8 flex flex-col items-center justify-center space-y-4 z-10">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 flex items-center justify-center text-3xl shadow-xl shadow-pink-500/30 group-hover:scale-110 transition-transform">
-                        {todayLetter.emoji || '💌'}
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-full border border-pink-200 text-primary-love shadow-sm">
-                        <Heart className="w-4 h-4 fill-primary-love" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-serif font-bold text-text-dark group-hover:text-primary-love transition-colors">
-                        {todayLetter.title}
-                      </h2>
-                      {todayLetter.subtitle && (
-                        <p className="text-xs text-text-sub mt-1 italic font-display">
-                          "{todayLetter.subtitle}"
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Bottom Action Footer */}
-                  <div className="flex justify-between items-center z-10 pt-4 border-t border-primary-love/10">
-                    <span className="text-xs text-primary-love font-serif italic flex items-center gap-1">
-                      <MessageCircleHeart className="w-4 h-4" /> Tap to open letter
-                    </span>
-                    <span className="px-4 py-2 bg-primary-love text-white text-xs font-bold rounded-full shadow-md group-hover:bg-primary-love/90 flex items-center gap-1">
-                      Open Envelope <ChevronRight className="w-3.5 h-3.5" />
-                    </span>
-                  </div>
-                </GlassCard>
-              </div>
-            ) : (
-              <GlassCard className="w-full max-w-xl text-center py-12 space-y-3">
-                <span className="text-4xl block">💌</span>
-                <h3 className="text-lg font-serif font-bold text-text-dark">No New Love Letters Yet</h3>
-                <p className="text-xs text-text-sub">Check back soon for your next handwritten message ❤️</p>
-              </GlassCard>
-            )}
+      {/* TIMELINE FEED */}
+      <section className="space-y-6 relative z-10">
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-white/40 p-4 rounded-3xl border border-primary-love/10 backdrop-blur-md">
+          {/* Categories Horizontal Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+            {categoriesList.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-primary-love text-white shadow-md shadow-pink-500/20'
+                    : 'bg-white/80 text-text-sub hover:bg-pink-100/50 border border-pink-100'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
 
-          {/* --- MEMORY TIMELINE GRID & SEARCH --- */}
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h2 className="text-2xl font-serif text-text-dark font-bold">Memory Timeline</h2>
-                <p className="text-xs text-text-sub">Every love letter and motivation stored forever.</p>
-              </div>
-
-              {/* Favorites & Sort Toggles */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setFavoritesOnly(!favoritesOnly)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                    favoritesOnly
-                      ? 'bg-pink-100 border-primary-love text-primary-love'
-                      : 'border-primary-love/15 text-text-sub hover:text-primary-love bg-white/50'
-                  }`}
-                >
-                  <Bookmark className={`w-3.5 h-3.5 ${favoritesOnly ? 'fill-primary-love' : ''}`} /> Favorites
-                </button>
-
-                <button
-                  onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-bold border border-primary-love/15 text-text-sub hover:text-text-dark bg-white/50 cursor-pointer"
-                >
-                  Sort: {sortOrder === 'newest' ? 'Newest' : 'Oldest'}
-                </button>
-              </div>
+          <div className="flex items-center gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 md:w-56">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-sub" />
+              <input
+                type="text"
+                placeholder="Search letters..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-1.5 text-xs rounded-full border border-pink-200/60 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-love/40"
+              />
             </div>
 
-            {/* Search & Category Pills */}
-            <div className="space-y-4">
-              <div className="relative">
-                <Search className="w-4 h-4 text-text-sub absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  placeholder="Search letters by title, message, or category..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs border border-primary-love/15 rounded-xl bg-white/60 focus:outline-none focus:border-primary-love"
-                />
-              </div>
+            {/* Favorite Filter Button */}
+            <button
+              onClick={() => setFavoritesOnly(!favoritesOnly)}
+              className={`p-2 rounded-full border transition-all cursor-pointer ${
+                favoritesOnly
+                  ? 'bg-rose-500 text-white border-rose-500 shadow-md'
+                  : 'bg-white/80 text-text-sub border-pink-200/60 hover:text-rose-500'
+              }`}
+              title="Filter Favorites"
+            >
+              <Bookmark className={`w-4 h-4 ${favoritesOnly ? 'fill-white' : ''}`} />
+            </button>
 
-              {/* Category Pills */}
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer border ${
-                      selectedCategory === cat
-                        ? 'bg-primary-love text-white border-primary-love shadow-sm'
-                        : 'bg-white/40 border-primary-love/10 text-text-sub hover:border-primary-love/30'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Timeline Cards Grid */}
-            {filteredLetters.length === 0 ? (
-              <div className="text-center py-12 text-xs text-text-sub border border-dashed border-primary-love/15 rounded-3xl bg-white/20">
-                No matching letters found. Try clearing filters or search query.
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {filteredLetters.map((letter) => (
-                  <GlassCard
-                    key={letter._id}
-                    animateHover={true}
-                    onClick={() => handleOpenLetter(letter)}
-                    className="flex flex-col justify-between p-6 cursor-pointer relative group border border-primary-love/10"
-                  >
-                    {/* Favorite Bookmark */}
-                    <button
-                      onClick={(e) => handleToggleFavorite(letter._id!, e)}
-                      className="absolute top-4 right-4 z-20 p-1.5 rounded-full bg-white/80 border border-primary-love/10 text-primary-love shadow-sm hover:bg-white cursor-pointer"
-                    >
-                      <Bookmark className={`w-3.5 h-3.5 ${letter.favorite ? 'fill-primary-love' : ''}`} />
-                    </button>
-
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl">{letter.emoji || '💌'}</span>
-                        <span className="text-[9px] font-bold text-primary-love bg-pink-50 border border-primary-love/10 px-2 py-0.5 rounded-full uppercase tracking-wider truncate">
-                          {letter.category}
-                        </span>
-                      </div>
-
-                      <h3 className="font-serif font-bold text-base text-text-dark mb-1 group-hover:text-primary-love transition-colors line-clamp-1">
-                        {letter.title}
-                      </h3>
-                      <p className="text-xs text-text-sub leading-relaxed line-clamp-2 italic font-display">
-                        "{letter.content}"
-                      </p>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-primary-love/5 flex justify-between items-center text-[10px] text-text-sub">
-                      <span>{letter.createdAt ? new Date(letter.createdAt).toLocaleDateString() : 'Date'}</span>
-                      {letter.reaction && letter.reaction !== 'None' && (
-                        <span className="px-2 py-0.5 bg-pink-100 rounded-full text-xs">{letter.reaction}</span>
-                      )}
-                    </div>
-                  </GlassCard>
-                ))}
-              </div>
-            )}
+            {/* Sort Order Toggle */}
+            <button
+              onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+              className="px-3 py-1.5 text-xs font-bold text-text-sub bg-white/80 rounded-full border border-pink-200/60 flex items-center gap-1 cursor-pointer hover:text-primary-love"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>{sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
+            </button>
           </div>
         </div>
 
-      {/* ========================================================= */}
-      {/* 3. FULL ENVELOPE OPENING OVERLAY MODAL                    */}
-      {/* ========================================================= */}
+        {/* Letters Grid */}
+        {filteredLetters.length === 0 ? (
+          <div className="text-center py-16 bg-white/30 border border-primary-love/10 rounded-3xl p-8 backdrop-blur-sm">
+            <MessageCircleHeart className="w-12 h-12 text-primary-love/40 mx-auto mb-3 animate-bounce" />
+            <h3 className="font-serif font-bold text-text-dark text-lg">No Published Letters Found</h3>
+            <p className="text-xs text-text-sub max-w-sm mx-auto mt-1 font-sans">
+              Check back soon for new sweet messages from your boyfriend.
+            </p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredLetters.map((letter) => {
+              const isUnread = letter.readStatus === 'Unread';
+              return (
+                <motion.div
+                  key={letter._id || letter.title}
+                  whileHover={{ y: -6, scale: 1.02 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  onClick={() => handleOpenLetter(letter)}
+                  className={`group cursor-pointer p-6 rounded-[28px] border relative flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl ${getThemeClasses(
+                    letter.bgTheme
+                  )}`}
+                >
+                  {/* Top Header */}
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="text-2xl p-2 bg-white/60 rounded-xl backdrop-blur-md border border-white/40 shadow-sm">
+                        {letter.emoji || '💌'}
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        {isUnread && (
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+                        )}
+
+                        <button
+                          onClick={(e) => handleToggleFavorite(letter._id || '', e)}
+                          className="p-1.5 rounded-full hover:bg-white/50 transition-colors"
+                        >
+                          <Bookmark
+                            className={`w-4 h-4 ${
+                              letter.favorite
+                                ? 'text-rose-500 fill-rose-500'
+                                : 'text-text-sub/50 hover:text-rose-500'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-bold tracking-wider uppercase opacity-75">
+                      {letter.category}
+                    </span>
+
+                    <h3 className="text-xl font-serif font-bold tracking-tight mt-1 group-hover:text-primary-love transition-colors">
+                      {letter.title}
+                    </h3>
+
+                    {letter.subtitle && (
+                      <p className="text-xs font-sans opacity-80 mt-1 line-clamp-1">
+                        {letter.subtitle}
+                      </p>
+                    )}
+
+                    <p className={`text-xs mt-3 line-clamp-3 opacity-90 ${getFontClass(letter.fontStyle)}`}>
+                      "{letter.content}"
+                    </p>
+                  </div>
+
+                  {/* Footer Action */}
+                  <div className="mt-6 pt-4 border-t border-black/5 flex items-center justify-between">
+                    <span className="text-[10px] font-mono opacity-60">
+                      {letter.createdAt ? new Date(letter.createdAt).toLocaleDateString() : 'Today'}
+                    </span>
+
+                    <span className="text-xs font-bold text-primary-love flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      Read Envelope <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* FULL LETTER READING ENVELOPE MODAL */}
       {createPortal(
         <AnimatePresence>
           {isEnvelopeOpen && activeReadingLetter && (
@@ -603,138 +420,94 @@ export const ForYou: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsEnvelopeOpen(false)}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
             >
-              {/* Floating Heart particles background animation */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute text-pink-300/40 text-xl"
-                    style={{
-                      left: `${Math.random() * 80 + 10}%`,
-                      top: `-20px`
-                    }}
-                    animate={{
-                      y: ['0vh', '80vh'],
-                      x: ['0px', `${(Math.random() - 0.5) * 80}px`],
-                      rotate: [0, 360]
-                    }}
-                    transition={{
-                      duration: Math.random() * 3 + 3,
-                      repeat: Infinity,
-                      ease: 'linear'
-                    }}
-                  >
-                    {i % 2 === 0 ? '🌸' : '❤️'}
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Main Unfolded Paper Modal */}
               <motion.div
-                initial={{ scale: 0.85, y: 30, rotateX: -15 }}
-                animate={{ scale: 1, y: 0, rotateX: 0 }}
-                exit={{ scale: 0.85, y: 30 }}
-                transition={{ type: 'spring', damping: 20 }}
-                onClick={(e) => e.stopPropagation()}
-                className={`max-w-xl w-full bg-gradient-to-br ${getThemeClasses(activeReadingLetter.bgTheme)} rounded-[36px] p-8 md:p-10 space-y-6 relative shadow-2xl z-10 border max-h-[90vh] overflow-y-auto`}
+                initial={{ scale: 0.9, y: 30 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 30 }}
+                className={`max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-[36px] p-8 sm:p-10 shadow-2xl border relative ${getThemeClasses(
+                  activeReadingLetter.bgTheme
+                )}`}
               >
                 {/* Close Button */}
                 <button
                   onClick={() => setIsEnvelopeOpen(false)}
-                  className="absolute top-5 right-5 p-2 text-text-sub hover:text-text-dark cursor-pointer z-20"
+                  className="absolute top-6 right-6 p-2 rounded-full bg-white/40 hover:bg-white/80 text-text-dark transition-all shadow-sm cursor-pointer z-20"
                 >
                   <X className="w-5 h-5" />
                 </button>
 
-                {/* Cover Image / Media Preview if available */}
+                {/* Cover Image if attached */}
                 {activeReadingLetter.coverImage && (
-                  <div className="aspect-video w-full rounded-2xl overflow-hidden border border-black/5 shadow-sm">
-                    <img src={activeReadingLetter.coverImage} alt="Cover" className="w-full h-full object-cover" />
+                  <div className="w-full h-48 rounded-2xl overflow-hidden mb-6 shadow-md border border-white/50">
+                    <img
+                      src={activeReadingLetter.coverImage}
+                      alt="Cover"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 )}
 
                 {/* Header */}
-                <div className="space-y-2 border-b border-black/10 pb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-3xl">{activeReadingLetter.emoji || '💌'}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-white/70 px-3 py-1 rounded-full shadow-sm">
-                      {activeReadingLetter.category}
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="text-4xl p-3 bg-white/60 rounded-2xl backdrop-blur-md border border-white/40 shadow-sm">
+                    {activeReadingLetter.emoji || '💖'}
+                  </span>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-widest opacity-70">
+                      {activeReadingLetter.category} &bull; {activeReadingLetter.mood || 'Romantic'}
                     </span>
+                    <h2 className="text-3xl font-serif font-bold mt-0.5">
+                      {activeReadingLetter.title}
+                    </h2>
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-serif font-bold text-text-dark leading-tight">
-                    {activeReadingLetter.title}
-                  </h2>
-                  {activeReadingLetter.subtitle && (
-                    <p className="text-xs text-text-sub italic font-display">
-                      "{activeReadingLetter.subtitle}"
-                    </p>
-                  )}
                 </div>
 
-                {/* Letter Body Content */}
-                <div className="my-6">
-                  <p
-                    className={`text-base md:text-xl text-text-dark leading-relaxed whitespace-pre-line ${
-                      activeReadingLetter.fontStyle === 'Handwritten'
-                        ? 'font-handwritten italic'
-                        : activeReadingLetter.fontStyle === 'Serif'
-                        ? 'font-serif'
-                        : 'font-sans'
-                    }`}
-                  >
-                    "{activeReadingLetter.content}"
+                {/* Subtitle */}
+                {activeReadingLetter.subtitle && (
+                  <p className="text-sm font-serif italic opacity-80 mb-6 pb-4 border-b border-black/10">
+                    "{activeReadingLetter.subtitle}"
                   </p>
+                )}
+
+                {/* Main Content */}
+                <div className={`text-base leading-relaxed my-6 ${getFontClass(activeReadingLetter.fontStyle)}`}>
+                  {activeReadingLetter.content.split('\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4">
+                      {paragraph}
+                    </p>
+                  ))}
                 </div>
 
-                {/* Voice Note Audio Player if present */}
-                {activeReadingLetter.voiceNote && (
-                  <div className="p-4 bg-white/60 border border-primary-love/15 rounded-2xl flex items-center gap-3">
-                    <Volume2 className="w-5 h-5 text-primary-love shrink-0" />
-                    <div className="flex-1">
-                      <span className="text-xs font-bold block text-text-dark">Voice Note Attachment</span>
-                      <audio controls src={activeReadingLetter.voiceNote} className="w-full mt-1 h-8" />
-                    </div>
+                {/* Media Audio / Video */}
+                {activeReadingLetter.music && (
+                  <div className="p-4 bg-white/50 rounded-2xl border border-white/60 my-4 flex items-center gap-3">
+                    <Volume2 className="w-5 h-5 text-primary-love" />
+                    <span className="text-xs font-bold">Background Music Attached</span>
                   </div>
                 )}
 
-                {/* Video Player if present */}
-                {activeReadingLetter.video && (
-                  <div className="aspect-video rounded-2xl overflow-hidden bg-black/10 border border-black/5">
-                    <video controls src={activeReadingLetter.video} className="w-full h-full object-cover" />
-                  </div>
-                )}
-
-                {/* Reactions & Favorite Bar */}
-                <div className="pt-6 border-t border-black/10 space-y-4">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <span className="text-xs font-serif font-bold text-text-sub">Send a Reaction:</span>
-                    
-                    <div className="flex items-center gap-2">
-                      {REACTION_OPTIONS.map((emoji) => (
-                        <button
-                          key={emoji}
-                          onClick={() => handleSetReaction(activeReadingLetter._id!, emoji as any)}
-                          className={`p-2.5 rounded-full text-lg transition-transform hover:scale-125 cursor-pointer ${
-                            activeReadingLetter.reaction === emoji
-                              ? 'bg-white shadow-md ring-2 ring-primary-love'
-                              : 'bg-white/40 hover:bg-white/80'
-                          }`}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
+                {/* Reaction Picker */}
+                <div className="mt-8 pt-6 border-t border-black/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold opacity-80">Send Reaction:</span>
+                    {(['❤️', '😊', '🥹', '🌸', '⭐'] as const).map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleSetReaction(activeReadingLetter._id || '', emoji)}
+                        className={`text-xl p-2 rounded-full hover:scale-125 transition-transform cursor-pointer ${
+                          activeReadingLetter.reaction === emoji ? 'bg-white/80 shadow-md ring-2 ring-primary-love' : ''
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
                   </div>
 
-                  <button
-                    onClick={() => setIsEnvelopeOpen(false)}
-                    className="w-full py-3 bg-primary-love text-white font-bold text-xs uppercase tracking-wider rounded-full hover:bg-primary-love/90 shadow-md cursor-pointer"
-                  >
-                    Close Letter ❤️
-                  </button>
+                  <span className="text-xs font-serif font-semibold opacity-75">
+                    Written with endless love ❤️
+                  </span>
                 </div>
               </motion.div>
             </motion.div>
@@ -742,7 +515,6 @@ export const ForYou: React.FC = () => {
         </AnimatePresence>,
         document.body
       )}
-
     </div>
   );
 };
