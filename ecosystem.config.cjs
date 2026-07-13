@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'forever-us-api',
+      name: 'her-rhythm-api',
       script: './server/src/index.js',
       node_args: '--dns-result-order=ipv4first',
       instances: 1, // Private app, single instance is sufficient

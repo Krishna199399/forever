@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/common/GlassCard';
 import { AnimatedCheckbox } from '@/components/common/AnimatedCheckbox';
@@ -13,7 +14,6 @@ import {
   Info,
   Trash,
   Sliders,
-  AlertTriangle,
   User,
   Coffee,
   X
@@ -322,16 +322,7 @@ export const Journey: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* --- MANDATORY MEDICAL DISCLAIMER BANNER --- */}
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-800 shadow-sm print:hidden">
-          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <span className="font-bold">Important Medical Notice:</span>
-            <p className="leading-relaxed text-amber-700">
-              This Cycle Tracking log is a personal, private wellness journal designed for self-care tracking. It **does not provide medical diagnoses, treatment recommendations, or replace professional gynecological consultation**. Please consult a qualified gynecologist or healthcare professional for any persistent symptoms, irregular cycles, or health concerns.
-            </p>
-          </div>
-        </div>
+
 
         {/* --- CALENDAR GRID & DAILY LOG EDITOR --- */}
         <div className="grid md:grid-cols-3 gap-8">
@@ -782,50 +773,55 @@ export const Journey: React.FC = () => {
       </div>
 
       {/* --- EDUCATIONAL ARTICLE READ MODAL --- */}
-      <AnimatePresence>
-        {activeArticle && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {activeArticle && (
             <motion.div
-              initial={{ scale: 0.92, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.92, y: 20 }}
-              className="max-w-md w-full bg-white border border-primary-love/15 rounded-[32px] p-8 space-y-5 relative shadow-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveArticle(null)}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setActiveArticle(null)}
-                className="absolute top-4 right-4 p-2 text-text-sub hover:text-text-dark cursor-pointer"
+              <motion.div
+                initial={{ scale: 0.92, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.92, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="max-w-md w-full bg-white border border-primary-love/15 rounded-[32px] p-8 space-y-5 relative shadow-2xl"
               >
-                <X className="w-5 h-5" />
-              </button>
+                {/* Close Button */}
+                <button
+                  onClick={() => setActiveArticle(null)}
+                  className="absolute top-4 right-4 p-2 text-text-sub hover:text-text-dark cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
 
-              <div>
-                <span className="text-[9px] font-bold text-primary-love bg-pink-50 border border-primary-love/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  {activeArticle.category}
-                </span>
-                <h3 className="text-2xl font-serif font-bold text-text-dark mt-3 leading-snug">{activeArticle.title}</h3>
-              </div>
+                <div>
+                  <span className="text-[9px] font-bold text-primary-love bg-pink-50 border border-primary-love/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    {activeArticle.category}
+                  </span>
+                  <h3 className="text-2xl font-serif font-bold text-text-dark mt-3 leading-snug">{activeArticle.title}</h3>
+                </div>
 
-              <p className="text-xs text-text-sub leading-relaxed pt-2 border-t border-primary-love/5">
-                {activeArticle.content}
-              </p>
+                <p className="text-xs text-text-sub leading-relaxed pt-2 border-t border-primary-love/5">
+                  {activeArticle.content}
+                </p>
 
-              {/* Medical notice within read sheets */}
-              <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-[10px] text-amber-700 leading-normal flex items-start gap-2">
-                <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <span>
-                  This article is compiled for nutritional educational review only and does not serve as clinical treatment directives.
-                </span>
-              </div>
+                {/* Medical notice within read sheets */}
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-[10px] text-amber-700 leading-normal flex items-start gap-2">
+                  <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <span>
+                    This article is compiled for nutritional educational review only and does not serve as clinical treatment directives.
+                  </span>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

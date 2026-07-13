@@ -1,4 +1,4 @@
-# Testing Guidelines - ❤️ Forever Us ❤️
+# Testing Guidelines - ❤️ Her Rhythm ❤️
 
 This file describes how to run automated checks on the wellness pages, API controllers, and database aggregations.
 

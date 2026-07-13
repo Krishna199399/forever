@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/common/GlassCard';
 import {
@@ -15,6 +15,7 @@ import {
   Laptop,
   CheckCircle
 } from 'lucide-react';
+import api from '@/lib/api';
 
 interface ProfileData {
   name: string;
@@ -81,29 +82,82 @@ export const Settings: React.FC = () => {
 
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Save profile helper
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // Fetch settings from MongoDB database on load
+  useEffect(() => {
+    api.get('/api/settings/profile').then((res) => {
+      if (res.data) {
+        const p = res.data;
+        setProfile({
+          name: p.name || "Sweetheart",
+          birthday: p.birthday || "2000-01-01",
+          height: p.height || 165,
+          weight: p.weight || 58,
+          targetWeight: p.targetWeight || 55,
+          waterGoal: p.waterGoal || 8,
+          stepGoal: p.stepGoal || 10000,
+          workoutGoal: p.workoutGoal || 30,
+          sleepGoal: p.sleepGoal || 8,
+          preferredWakeTime: p.preferredWakeTime || "07:00",
+          preferredBedtime: p.preferredBedtime || "22:30",
+          favoriteQuote: p.favoriteQuote || "Rest is where tomorrow begins."
+        });
+        if (p.theme) {
+          setActiveTheme(p.theme);
+          localStorage.setItem('app_theme', p.theme);
+        }
+        if (p.colorMode) {
+          setColorMode(p.colorMode);
+          localStorage.setItem('color_mode', p.colorMode);
+        }
+        if (p.notifications) {
+          setNotifications(p.notifications);
+          localStorage.setItem('reminders_config', JSON.stringify(p.notifications));
+        }
+      }
+    }).catch((err) => {
+      console.log('Using offline localStorage profile settings:', err);
+    });
+  }, []);
+
+  // Save profile helper to MongoDB Database & Sync Target Goals
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('user_profile', JSON.stringify(profile));
-    triggerSuccess('Profile settings updated successfully!');
+    localStorage.setItem('progress_water_goal', String(profile.waterGoal));
+    localStorage.setItem('progress_workout_goal', String(profile.workoutGoal));
+    localStorage.setItem('progress_sleep_goal', String(profile.sleepGoal));
+
+    try {
+      await api.put('/api/settings/profile', {
+        ...profile,
+        theme: activeTheme,
+        colorMode,
+        notifications
+      });
+      triggerSuccess('Profile & target goals saved to database!');
+    } catch (err) {
+      triggerSuccess('Profile settings updated successfully!');
+    }
   };
 
   const triggerSuccess = (msg: string) => {
     setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 3000);
+    setTimeout(() => setSuccessMsg(''), 3500);
   };
 
   // Change Theme helper
-  const handleChangeTheme = (themeId: string) => {
+  const handleChangeTheme = async (themeId: string) => {
     setActiveTheme(themeId);
     localStorage.setItem('app_theme', themeId);
-    // Custom body class updates for dynamic styling
     document.body.className = `theme-${themeId}`;
     triggerSuccess(`App skin changed to ${themeId} theme!`);
+    try {
+      await api.put('/api/settings/profile', { theme: themeId });
+    } catch (e) {}
   };
 
   // Change Dark/Light mode
-  const handleChangeMode = (mode: string) => {
+  const handleChangeMode = async (mode: string) => {
     setColorMode(mode);
     localStorage.setItem('color_mode', mode);
     if (mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -111,13 +165,19 @@ export const Settings: React.FC = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    try {
+      await api.put('/api/settings/profile', { colorMode: mode });
+    } catch (e) {}
   };
 
   // Toggle notification item
-  const handleToggleReminder = (key: string) => {
+  const handleToggleReminder = async (key: string) => {
     const updated = { ...notifications, [key]: !notifications[key as keyof typeof notifications] };
     setNotifications(updated);
     localStorage.setItem('reminders_config', JSON.stringify(updated));
+    try {
+      await api.put('/api/settings/profile', { notifications: updated });
+    } catch (e) {}
   };
 
   // Export JSON backup data

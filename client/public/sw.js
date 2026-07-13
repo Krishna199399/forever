@@ -1,4 +1,4 @@
-// Service Worker — Forever Us Production PWA
+// Service Worker — Her Rhythm Production PWA
 // Strategy: Cache-First for static assets, Network-First for API calls
 
 const CACHE_VERSION = 'v2';

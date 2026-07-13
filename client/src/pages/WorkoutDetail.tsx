@@ -236,10 +236,7 @@ export const WorkoutDetail: React.FC = () => {
         <ChevronLeft className="w-4 h-4" /> Back to Bloom
       </Link>
 
-      {/* Medical Disclaimer Banner */}
-      <div className="p-4 bg-primary-love/5 border border-primary-love/10 rounded-2xl text-[11px] text-text-sub/80 leading-relaxed">
-        ℹ️ <strong>General Wellness Support:</strong> These exercises support general fitness and healthy lifestyle habits. They are not a treatment or cure for PCOS. Please consult a healthcare professional before starting a new exercise routine.
-      </div>
+
 
       {/* --- HERO IMAGE CONTAINER --- */}
       <div className="relative rounded-[28px] overflow-hidden aspect-video bg-gradient-to-tr from-pink-300 via-purple-300 to-orange-200 border-glass flex items-center justify-center p-6 text-center">

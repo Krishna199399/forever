@@ -61,11 +61,19 @@ const PageLoader: React.FC = () => (
 export const AppRoutes: React.FC = () => {
   const location = useLocation();
 
-  // Auto Audit Activity Logger
+  const lastLoggedRef = React.useRef<{ path: string; time: number }>({ path: '', time: 0 });
+
+  // Auto Audit Activity Logger (Deduplicated)
   useEffect(() => {
     const logActivity = async () => {
-      // Exclude caregiver-portal to avoid logging the caregiver's own views!
       if (location.pathname === '/caregiver-portal') return;
+
+      const now = Date.now();
+      // Skip duplicate audit logs for the same route if triggered within 5 seconds
+      if (lastLoggedRef.current.path === location.pathname && (now - lastLoggedRef.current.time) < 5000) {
+        return;
+      }
+      lastLoggedRef.current = { path: location.pathname, time: now };
 
       let pageName = 'Home Page';
       if (location.pathname === '/journey') pageName = 'Journey Page';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/common/GlassCard';
 import { AnimatedCheckbox } from '@/components/common/AnimatedCheckbox';
@@ -84,6 +84,7 @@ const DEFAULT_SHOPPING_LIST = [
 ];
 
 export const Meals: React.FC = () => {
+  const navigate = useNavigate();
   // --- DATABASE STATE ---
   const [meals, setMeals] = useState<Meal[]>([]);
   const [progress, setProgress] = useState<MealProgress[]>([]);
@@ -656,7 +657,8 @@ export const Meals: React.FC = () => {
                   <GlassCard
                     key={meal.slug}
                     animateHover={true}
-                    className="flex flex-col justify-between overflow-hidden relative"
+                    onClick={() => navigate(`/meals/${meal.slug}`)}
+                    className="flex flex-col justify-between overflow-hidden relative cursor-pointer"
                   >
                     {/* Favorite Button */}
                     <button

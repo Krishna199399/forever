@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/common/GlassCard';
 import { AnimatedCheckbox } from '@/components/common/AnimatedCheckbox';
@@ -8,18 +10,16 @@ import {
   Heart,
   Sparkles,
   ChevronRight,
-  Music,
-  Play,
-  Pause,
   BookOpen,
   X,
-  Volume2,
   Trophy,
   Flame,
   Calendar,
   Clock,
-  CloudSun
+  CloudSun,
+  Mail
 } from 'lucide-react';
+import api from '@/lib/api';
 
 // Design Constants
 const LOVE_LETTERS = [
@@ -40,13 +40,6 @@ const MOTIVATIONS = [
   "Take one healthy step today, for us.",
   "You do not need to be perfect to be amazing.",
   "Rest is just as productive as progress. Listen to your body.",
-];
-
-const MUSIC_TRACKS = [
-  { id: 'rain', name: 'Cozy Rain', icon: '🌧️', url: 'https://assets.mixkit.co/active_storage/sfx/2513/2513-84.wav' },
-  { id: 'ocean', name: 'Calm Ocean', icon: '🌊', url: 'https://assets.mixkit.co/active_storage/sfx/2507/2507-84.wav' },
-  { id: 'piano', name: 'Soft Ambient', icon: '🎵', url: 'https://assets.mixkit.co/active_storage/sfx/2519/2519-84.wav' },
-  { id: 'nature', name: 'Forest Birds', icon: '🍃', url: 'https://assets.mixkit.co/active_storage/sfx/2520/2520-84.wav' },
 ];
 
 const EDUCATION_TOPICS = [
@@ -122,12 +115,15 @@ export const Home: React.FC = () => {
     ];
   });
 
-  // Music Player
-  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
-
   // Modal State
   const [activeModalTopic, setActiveModalTopic] = useState<typeof EDUCATION_TOPICS[0] | null>(null);
+  const [todayLetter, setTodayLetter] = useState<any>(null);
+
+  useEffect(() => {
+    api.get('/api/letters/today').then((res) => {
+      if (res.data) setTodayLetter(res.data);
+    }).catch(() => {});
+  }, []);
 
   // End of Day Celebrations
   const [showCelebration, setShowCelebration] = useState(false);
@@ -211,20 +207,7 @@ export const Home: React.FC = () => {
     );
   };
 
-  const handleMusicToggle = (track: typeof MUSIC_TRACKS[0]) => {
-    if (playingTrackId === track.id) {
-      if (audioElement) audioElement.pause();
-      setPlayingTrackId(null);
-    } else {
-      if (audioElement) audioElement.pause();
-      const audio = new Audio(track.url);
-      audio.loop = true;
-      audio.volume = 0.35;
-      audio.play().catch((e) => console.log('Audio error:', e));
-      setAudioElement(audio);
-      setPlayingTrackId(track.id);
-    }
-  };
+
 
   const finishToday = () => {
     setDayFinished(true);
@@ -595,7 +578,7 @@ export const Home: React.FC = () => {
 
           </div>
 
-          {/* RIGHT COLUMN (Goals, Wellness Wheel, Music & Personal Widgets) */}
+          {/* RIGHT COLUMN (Goals, Wellness Wheel & Personal Widgets) */}
           <div className="space-y-8">
             
             {/* WELLNESS WHEEL */}
@@ -757,43 +740,33 @@ export const Home: React.FC = () => {
               <div className="w-8 h-[2px] bg-primary-love/25 mt-4" />
             </GlassCard>
 
-            {/* MUSIC PLAYER */}
-            <GlassCard animateHover={false} className="border-2 border-primary-love/5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Music className="w-4.5 h-4.5 text-primary-love" />
-                  <h4 className="text-sm font-semibold text-text-dark font-sans">Sound Machine</h4>
-                </div>
-                {playingTrackId && <Volume2 className="w-4 h-4 text-primary-love animate-pulse" />}
-              </div>
+            {/* DAILY LOVE LETTER WIDGET */}
+            {todayLetter && (
+              <GlassCard className="bg-gradient-to-tr from-rose-50 via-pink-50 to-purple-50 border-2 border-primary-love/15 relative overflow-hidden group cursor-pointer">
+                <Link to="/for-you" className="block space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-primary-love uppercase tracking-wider flex items-center gap-1">
+                      <Mail className="w-4 h-4" /> Daily Love Letter
+                    </span>
+                    <span className="text-lg">{todayLetter.emoji || '💌'}</span>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {MUSIC_TRACKS.map((track) => {
-                  const isPlaying = playingTrackId === track.id;
-                  return (
-                    <button
-                      key={track.id}
-                      onClick={() => handleMusicToggle(track)}
-                      className={`p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer ${
-                        isPlaying
-                          ? 'bg-primary-love/10 border-primary-love text-primary-love font-semibold'
-                          : 'border-primary-love/5 hover:border-primary-love/25 bg-white/40 text-text-dark'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-left">
-                        <span className="text-lg">{track.icon}</span>
-                        <span className="text-[11px] truncate w-20 leading-tight">{track.name}</span>
-                      </div>
-                      {isPlaying ? (
-                        <Pause className="w-3.5 h-3.5 fill-primary-love stroke-none" />
-                      ) : (
-                        <Play className="w-3 h-3 fill-text-sub stroke-none" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </GlassCard>
+                  <h4 className="font-serif font-bold text-base text-text-dark group-hover:text-primary-love transition-colors">
+                    {todayLetter.title}
+                  </h4>
+                  <p className="text-xs text-text-sub line-clamp-2 italic font-display">
+                    "{todayLetter.content}"
+                  </p>
+
+                  <div className="pt-2 flex justify-between items-center text-[10px] font-bold text-primary-love">
+                    <span>Open Sealed Envelope</span>
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              </GlassCard>
+            )}
+
+
 
           </div>
         </div>
@@ -904,120 +877,126 @@ export const Home: React.FC = () => {
       </div>
 
       {/* --- CELEBRATION MODAL OVERLAY --- */}
-      <AnimatePresence>
-        {showCelebration && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowCelebration(false)}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {showCelebration && (
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="max-w-md w-full bg-white border border-primary-love/15 rounded-[32px] p-8 text-center space-y-6 relative overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCelebration(false)}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
             >
-              {/* Confetti details */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {Array.from({ length: 15 }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-2 h-2 rounded-full"
-                    style={{
-                      left: `${Math.random() * 80 + 10}%`,
-                      top: `-20px`,
-                      backgroundColor: i % 3 === 0 ? '#f472b6' : i % 3 === 1 ? '#c084fc' : '#38bdf8'
-                    }}
-                    animate={{
-                      y: ['0vh', '50vh'],
-                      x: ['0px', `${(Math.random() - 0.5) * 60}px`],
-                      rotate: [0, 360],
-                    }}
-                    transition={{
-                      duration: Math.random() * 2 + 1.5,
-                      ease: 'easeOut',
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div className="p-4 bg-primary-love/10 text-primary-love rounded-full w-fit mx-auto animate-bounce">
-                <Heart className="w-8 h-8 fill-primary-love" />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-2xl font-serif font-bold text-text-dark">Today was beautiful!</h3>
-                <p className="text-sm text-text-sub leading-relaxed">
-                  "I'm so incredibly proud of you for prioritizing your wellness today. You are worth every single step. Get some rest, love."
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowCelebration(false)}
-                className="w-full py-3 bg-primary-love text-white text-xs font-semibold rounded-full hover:bg-primary-love/90 shadow-lg shadow-primary-love/20 cursor-pointer"
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="max-w-md w-full bg-white border border-primary-love/15 rounded-[32px] p-8 text-center space-y-6 relative overflow-hidden"
               >
-                Close &bull; Sleep well ❤️
-              </button>
+                {/* Confetti details */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  {Array.from({ length: 15 }).map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-2 h-2 rounded-full"
+                      style={{
+                        left: `${Math.random() * 80 + 10}%`,
+                        top: `-20px`,
+                        backgroundColor: i % 3 === 0 ? '#f472b6' : i % 3 === 1 ? '#c084fc' : '#38bdf8'
+                      }}
+                      animate={{
+                        y: ['0vh', '50vh'],
+                        x: ['0px', `${(Math.random() - 0.5) * 60}px`],
+                        rotate: [0, 360],
+                      }}
+                      transition={{
+                        duration: Math.random() * 2 + 1.5,
+                        ease: 'easeOut',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="p-4 bg-primary-love/10 text-primary-love rounded-full w-fit mx-auto animate-bounce">
+                  <Heart className="w-8 h-8 fill-primary-love" />
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-serif font-bold text-text-dark">Today was beautiful!</h3>
+                  <p className="text-sm text-text-sub leading-relaxed">
+                    "I'm so incredibly proud of you for prioritizing your wellness today. You are worth every single step. Get some rest, love."
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowCelebration(false)}
+                  className="w-full py-3 bg-primary-love text-white text-xs font-semibold rounded-full hover:bg-primary-love/90 shadow-lg shadow-primary-love/20 cursor-pointer"
+                >
+                  Close &bull; Sleep well ❤️
+                </button>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* --- ARTICLE MODAL WINDOW --- */}
-      <AnimatePresence>
-        {activeModalTopic && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setActiveModalTopic(null)}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {activeModalTopic && (
             <motion.div
-              initial={{ scale: 0.9, y: 25 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 25 }}
-              onClick={(e) => e.stopPropagation()}
-              className="max-w-xl w-full bg-white border border-primary-love/15 rounded-[32px] p-8 space-y-6 relative overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveModalTopic(null)}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setActiveModalTopic(null)}
-                className="absolute top-4 right-4 p-2 text-text-sub hover:text-text-dark transition-colors cursor-pointer"
+              <motion.div
+                initial={{ scale: 0.9, y: 25 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 25 }}
+                onClick={(e) => e.stopPropagation()}
+                className="max-w-lg w-[90%] sm:w-full bg-white border border-primary-love/15 rounded-[32px] p-6 sm:p-8 space-y-6 relative overflow-hidden shadow-xl"
               >
-                <X className="w-5 h-5" />
-              </button>
+                {/* Close Button */}
+                <button
+                  onClick={() => setActiveModalTopic(null)}
+                  className="absolute top-4 right-4 p-2 text-text-sub hover:text-text-dark transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
 
-              <div className="space-y-4">
-                <div className={`p-2.5 w-fit rounded-xl border ${activeModalTopic.color}`}>
-                  <BookOpen className="w-5 h-5" />
+                <div className="space-y-4">
+                  <div className={`p-2.5 w-fit rounded-xl border ${activeModalTopic.color}`}>
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-2xl font-serif font-bold text-text-dark">{activeModalTopic.title}</h3>
+                  <p className="text-sm text-text-sub/90 leading-relaxed text-justify">
+                    {activeModalTopic.content}
+                  </p>
                 </div>
-                <h3 className="text-2xl font-serif font-bold text-text-dark">{activeModalTopic.title}</h3>
-                <p className="text-sm text-text-sub/90 leading-relaxed text-justify">
-                  {activeModalTopic.content}
-                </p>
-              </div>
 
-              <div className="bg-primary-love/5 border border-primary-love/10 p-4 rounded-2xl flex gap-3.5 items-center">
-                <Heart className="w-6 h-6 text-primary-love fill-primary-love/10 shrink-0" />
-                <p className="text-xs text-primary-love italic font-serif">
-                  "I want you to be healthy because your longevity and strength are what make our days together possible. Take care of yourself, sweet girl."
-                </p>
-              </div>
+                <div className="bg-primary-love/5 border border-primary-love/10 p-4 rounded-2xl flex gap-3.5 items-center">
+                  <Heart className="w-6 h-6 text-primary-love fill-primary-love/10 shrink-0" />
+                  <p className="text-xs text-primary-love italic font-serif">
+                    "I want you to be healthy because your longevity and strength are what make our days together possible. Take care of yourself, sweet girl."
+                  </p>
+                </div>
 
-              <button
-                onClick={() => setActiveModalTopic(null)}
-                className="w-full py-3 border border-primary-love/20 text-primary-love text-xs font-semibold rounded-full hover:bg-primary-love/5 transition-colors cursor-pointer"
-              >
-                Go Back to Dashboard
-              </button>
+                <button
+                  onClick={() => setActiveModalTopic(null)}
+                  className="w-full py-3 border border-primary-love/20 text-primary-love text-xs font-semibold rounded-full hover:bg-primary-love/5 transition-colors cursor-pointer"
+                >
+                  Go Back to Dashboard
+                </button>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

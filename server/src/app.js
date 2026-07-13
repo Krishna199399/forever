@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import mongoose from 'mongoose';
-import { Water, Sleep, Workout, Meal, Mood, Promise, LoveNote, WorkoutLibrary, WorkoutProgress, MealLibrary, MealProgress, DetailedSleepLog, CycleWellnessLog, Memory, AuditLog, Settings } from './models/index.js';
+import { Water, Sleep, Workout, Meal, Mood, Promise, LoveNote, WorkoutLibrary, WorkoutProgress, MealLibrary, MealProgress, DetailedSleepLog, CycleWellnessLog, Memory, AuditLog, Settings, LoveLetter, UserProfile } from './models/index.js';
 
 const app = express();
 
@@ -691,34 +691,72 @@ app.get('/api/caregiver/activities', async (req, res) => {
       dateList.push(`${year}-${month}-${day}`);
     }
 
-    // Fetch progress from each domain database sequentially to avoid Promise shadow collisions
+    // Query actual MongoDB documents strictly logged by user
     const workouts = await WorkoutProgress.find({ completedDate: { $in: dateList } }).sort({ createdAt: -1 });
-    const sleeps = await DetailedSleepLog.find({ date: { $in: dateList } }).sort({ date: -1 });
+    const detailedSleeps = await DetailedSleepLog.find({ date: { $in: dateList } }).sort({ date: -1 });
+    const simpleSleeps = await Sleep.find({ date: { $in: dateList } }).sort({ date: -1 });
     const meals = await MealProgress.find({ completedDate: { $in: dateList } }).sort({ createdAt: -1 });
     const waters = await Water.find({ date: { $in: dateList } }).sort({ date: -1 });
     const cycles = await CycleWellnessLog.find({ date: { $in: dateList } }).sort({ date: -1 });
 
-    // Aggregate compliance stats
     let totalSleepDuration = 0;
     let sleepDaysCount = 0;
     let totalWaterCups = 0;
     let waterDaysCount = 0;
 
     const timeline = dateList.map((date) => {
-      const dayWorkouts = workouts.filter(w => w.completedDate === date);
-      const daySleep = sleeps.find(s => s.date === date) || null;
-      const dayMeals = meals.filter(m => m.completedDate === date);
-      const dayWater = waters.find(w => w.date === date) || null;
-      const dayCycle = cycles.find(c => c.date === date) || null;
+      // 1. Workouts
+      const dayWorkouts = workouts.filter(w => w.completedDate === date).map(w => ({
+        workoutTitle: w.workoutTitle || 'Exercise Session',
+        duration: w.duration || 0,
+        calories: w.calories || 0,
+        mood: w.mood || '',
+        notes: w.notes || ''
+      }));
 
-      if (daySleep) {
-        totalSleepDuration += daySleep.hoursSlept;
+      // 2. Sleep
+      const detailedDoc = detailedSleeps.find(s => s.date === date);
+      const simpleDoc = simpleSleeps.find(s => s.date === date);
+      let daySleep = null;
+      if (detailedDoc) {
+        daySleep = {
+          bedtime: detailedDoc.bedtime || '',
+          wakeTime: detailedDoc.wakeTime || '',
+          hoursSlept: detailedDoc.hoursSlept || 0,
+          quality: detailedDoc.quality || 'Good',
+          gratitudeJournal: detailedDoc.gratitudeJournal || ''
+        };
+        totalSleepDuration += detailedDoc.hoursSlept || 0;
+        sleepDaysCount++;
+      } else if (simpleDoc) {
+        daySleep = {
+          bedtime: '',
+          wakeTime: '',
+          hoursSlept: simpleDoc.durationHours || 0,
+          quality: simpleDoc.quality || 'Good',
+          gratitudeJournal: ''
+        };
+        totalSleepDuration += simpleDoc.durationHours || 0;
         sleepDaysCount++;
       }
-      if (dayWater) {
-        totalWaterCups += dayWater.consumedCups;
+
+      // 3. Meals
+      const dayMeals = meals.filter(m => m.completedDate === date);
+
+      // 4. Water
+      const waterDoc = waters.find(w => w.date === date);
+      let dayWater = null;
+      if (waterDoc) {
+        dayWater = {
+          consumedCups: waterDoc.consumedCups || 0,
+          targetCups: waterDoc.targetCups || 8
+        };
+        totalWaterCups += waterDoc.consumedCups || 0;
         waterDaysCount++;
       }
+
+      // 5. Cycle
+      const cycleDoc = cycles.find(c => c.date === date) || null;
 
       return {
         date,
@@ -726,16 +764,20 @@ app.get('/api/caregiver/activities', async (req, res) => {
         sleep: daySleep,
         meals: dayMeals,
         water: dayWater,
-        cycle: dayCycle
+        cycle: cycleDoc
       };
     });
+
+    const totalWorkoutCount = workouts.length;
+    const avgSleep = sleepDaysCount > 0 ? (totalSleepDuration / sleepDaysCount).toFixed(1) : "0.0";
+    const avgWater = waterDaysCount > 0 ? (totalWaterCups / waterDaysCount).toFixed(1) : "0.0";
 
     res.json({
       days,
       stats: {
-        avgSleep: sleepDaysCount > 0 ? (totalSleepDuration / sleepDaysCount).toFixed(1) : "8.0",
-        avgWater: waterDaysCount > 0 ? (totalWaterCups / waterDaysCount).toFixed(1) : "0.0",
-        totalWorkouts: workouts.length,
+        avgSleep,
+        avgWater,
+        totalWorkouts: totalWorkoutCount,
       },
       timeline
     });
@@ -752,6 +794,19 @@ app.post('/api/user/audit', async (req, res) => {
     if (!action || !category) {
       return res.status(400).json({ error: 'Action and category are required' });
     }
+
+    // Check for recent duplicate audit log within the past 5 seconds
+    const fiveSecondsAgo = new Date(Date.now() - 5000);
+    const existing = await AuditLog.findOne({
+      action: String(action),
+      category: String(category),
+      timestamp: { $gte: fiveSecondsAgo }
+    });
+
+    if (existing) {
+      return res.json(existing);
+    }
+
     const log = await AuditLog.create({
       action: String(action),
       category: String(category),
@@ -766,12 +821,283 @@ app.post('/api/user/audit', async (req, res) => {
 
 app.get('/api/caregiver/audit', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 50;
-    const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(limit);
-    res.json(logs);
+    const limit = parseInt(req.query.limit) || 60;
+    const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(limit * 2);
+
+    // Filter out rapid duplicate consecutive logs for clean presentation
+    const cleanLogs = [];
+    const seen = new Set();
+
+    for (const log of logs) {
+      const timeKey = `${log.action}-${Math.floor(new Date(log.timestamp).getTime() / 5000)}`;
+      if (!seen.has(timeKey)) {
+        seen.add(timeKey);
+        cleanLogs.push(log);
+      }
+      if (cleanLogs.length >= limit) break;
+    }
+
+    res.json(cleanLogs);
   } catch (error) {
     console.error('Audit Log Fetch Error:', error);
     res.status(500).json({ error: 'Failed to fetch audit logs' });
+  }
+});
+
+// --- DAILY LOVE LETTERS ROUTES ---
+
+// GET /api/letters - List all letters with filters
+app.get('/api/letters', async (req, res) => {
+  try {
+    const { category, search, mood, favorite, published, deliveryOption, sort } = req.query;
+    let filter = {};
+
+    if (category && category !== 'All') {
+      filter.category = category;
+    }
+    if (mood && mood !== 'All') {
+      filter.mood = mood;
+    }
+    if (favorite === 'true') {
+      filter.favorite = true;
+    }
+    if (published !== undefined) {
+      filter.published = published === 'true';
+    }
+    if (deliveryOption && deliveryOption !== 'All') {
+      filter.deliveryOption = deliveryOption;
+    }
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { subtitle: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } },
+        { tags: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const sortOrder = sort === 'oldest' ? { createdAt: 1 } : { createdAt: -1 };
+    const letters = await LoveLetter.find(filter).sort(sortOrder);
+    res.json(letters);
+  } catch (error) {
+    console.error('Fetch Letters Error:', error);
+    res.status(500).json({ error: 'Failed to fetch love letters' });
+  }
+});
+
+// GET /api/letters/today - Get today's published featured letter strictly from MongoDB
+app.get('/api/letters/today', async (req, res) => {
+  try {
+    const letter = await LoveLetter.findOne({ published: true }).sort({ createdAt: -1 });
+    res.json(letter || null);
+  } catch (error) {
+    console.error('Today Letter Fetch Error:', error);
+    res.status(500).json({ error: 'Failed to fetch today\'s letter' });
+  }
+});
+
+// GET /api/letters/analytics - Admin Metrics Overview
+app.get('/api/letters/analytics', async (req, res) => {
+  try {
+    const totalLetters = await LoveLetter.countDocuments();
+    const publishedCount = await LoveLetter.countDocuments({ published: true });
+    const readCount = await LoveLetter.countDocuments({ published: true, readStatus: 'Read' });
+    const favoritesCount = await LoveLetter.countDocuments({ favorite: true });
+
+    const readRate = publishedCount > 0 ? Math.round((readCount / publishedCount) * 100) : 0;
+
+    // Reactions count breakdown
+    const reactions = await LoveLetter.aggregate([
+      { $match: { reaction: { $ne: 'None' } } },
+      { $group: { _id: '$reaction', count: { $sum: 1 } } }
+    ]);
+    const reactionsMap = { '❤️': 0, '😊': 0, '🥹': 0, '🌸': 0, '⭐': 0 };
+    reactions.forEach(r => {
+      if (reactionsMap[r._id] !== undefined) {
+        reactionsMap[r._id] = r.count;
+      }
+    });
+
+    const mostLoved = await LoveLetter.findOne({ favorite: true }).sort({ updatedAt: -1 });
+
+    res.json({
+      totalLetters,
+      publishedCount,
+      readCount,
+      readRate,
+      favoritesCount,
+      reactionsMap,
+      mostLoved
+    });
+  } catch (error) {
+    console.error('Analytics Error:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+// POST /api/letters - Create Love Letter
+app.post('/api/letters', async (req, res) => {
+  try {
+    const { title, subtitle, content, category, mood, emoji, bgTheme, fontStyle, priority, coverImage, music, video, voiceNote, published, deliveryOption, scheduledAt, recurrence, tags } = req.body;
+    
+    if (!title || !content) {
+      return res.status(400).json({ error: 'Title and content are required' });
+    }
+
+    const parsedScheduledDate = (scheduledAt && !isNaN(Date.parse(scheduledAt))) ? new Date(scheduledAt) : null;
+
+    const newLetter = await LoveLetter.create({
+      title,
+      subtitle: subtitle || '',
+      content,
+      category: category || 'Love Letter',
+      mood: mood || 'Romantic',
+      emoji: emoji || '❤️',
+      bgTheme: bgTheme || 'Rose',
+      fontStyle: fontStyle || 'Handwritten',
+      priority: priority || 'Normal',
+      coverImage: coverImage || '',
+      music: music || '',
+      video: video || '',
+      voiceNote: voiceNote || '',
+      published: published !== undefined ? Boolean(published) : true,
+      deliveryOption: deliveryOption || 'Immediate',
+      scheduledAt: parsedScheduledDate,
+      recurrence: recurrence || 'None',
+      tags: Array.isArray(tags) ? tags : (tags ? String(tags).split(',').map(t => t.trim()) : [])
+    });
+
+    res.status(201).json(newLetter);
+  } catch (error) {
+    console.error('Create Letter Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to create love letter' });
+  }
+});
+
+// PUT /api/letters/:id - Update Love Letter
+app.put('/api/letters/:id', async (req, res) => {
+  try {
+    const updated = await LoveLetter.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) {
+      return res.status(404).json({ error: 'Letter not found' });
+    }
+    res.json(updated);
+  } catch (error) {
+    console.error('Update Letter Error:', error);
+    res.status(500).json({ error: 'Failed to update letter' });
+  }
+});
+
+// PATCH /api/letters/:id/read - Mark Read
+app.patch('/api/letters/:id/read', async (req, res) => {
+  try {
+    const updated = await LoveLetter.findByIdAndUpdate(
+      req.params.id, 
+      { readStatus: 'Read', readAt: new Date() }, 
+      { new: true }
+    );
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update read status' });
+  }
+});
+
+// PATCH /api/letters/:id/reaction - Set Reaction
+app.patch('/api/letters/:id/reaction', async (req, res) => {
+  try {
+    const { reaction } = req.body;
+    const updated = await LoveLetter.findByIdAndUpdate(
+      req.params.id, 
+      { reaction: reaction || 'None' }, 
+      { new: true }
+    );
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update reaction' });
+  }
+});
+
+// PATCH /api/letters/:id/favorite - Toggle Favorite
+app.patch('/api/letters/:id/favorite', async (req, res) => {
+  try {
+    const letter = await LoveLetter.findById(req.params.id);
+    if (!letter) return res.status(404).json({ error: 'Letter not found' });
+    letter.favorite = !letter.favorite;
+    await letter.save();
+    res.json(letter);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle favorite' });
+  }
+});
+
+// DELETE /api/letters/:id - Delete Letter
+app.delete('/api/letters/:id', async (req, res) => {
+  try {
+    await LoveLetter.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Letter deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete letter' });
+  }
+});
+
+// --- USER PROFILE & SETTINGS ROUTES ---
+
+// GET /api/settings/profile
+app.get('/api/settings/profile', async (req, res) => {
+  try {
+    let profile = await UserProfile.findOne();
+    if (!profile) {
+      profile = await UserProfile.create({
+        name: 'Sweetheart',
+        birthday: '2000-01-01',
+        height: 165,
+        weight: 58,
+        targetWeight: 55,
+        waterGoal: 8,
+        stepGoal: 10000,
+        workoutGoal: 30,
+        sleepGoal: 8,
+        preferredWakeTime: '07:00',
+        preferredBedtime: '22:30',
+        favoriteQuote: 'Rest is where tomorrow begins.'
+      });
+    }
+    res.json(profile);
+  } catch (error) {
+    console.error('Fetch Profile Settings Error:', error);
+    res.status(500).json({ error: 'Failed to fetch user profile settings' });
+  }
+});
+
+// --- CAREGIVER PORTAL ENDPOINTS ---
+
+// POST /api/caregiver/verify-pin
+app.post('/api/caregiver/verify-pin', async (req, res) => {
+  try {
+    const { pin } = req.body || {};
+    if (pin === '1234' || pin === '5201314') {
+      return res.json({ success: true, message: 'PIN Verified' });
+    }
+    return res.status(401).json({ success: false, error: 'Incorrect Passcode. Access Denied.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// PUT /api/settings/profile
+app.put('/api/settings/profile', async (req, res) => {
+  try {
+    let profile = await UserProfile.findOne();
+    if (profile) {
+      Object.assign(profile, req.body);
+      await profile.save();
+    } else {
+      profile = await UserProfile.create(req.body);
+    }
+    res.json(profile);
+  } catch (error) {
+    console.error('Update Profile Settings Error:', error);
+    res.status(500).json({ error: 'Failed to update profile settings' });
   }
 });
 

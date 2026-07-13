@@ -718,10 +718,7 @@ export const Exercise: React.FC = () => {
               "Bloom" is your pressure-free movement companion. Auto-detecting your daily cycle targets, facilitating stretching, breathing, and walks tailored specifically for PCOD/PCOS recovery.
             </p>
 
-            {/* Medical Disclaimer Banner */}
-            <div className="p-4 bg-primary-love/5 border border-primary-love/10 rounded-2xl text-[11px] text-text-sub/80 leading-relaxed text-left">
-              ℹ️ <strong>General Wellness Support:</strong> These exercises support general fitness and healthy lifestyle habits. They are not a treatment or cure for PCOS. Please consult a healthcare professional before starting a new exercise routine.
-            </div>
+
 
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs font-semibold text-text-sub uppercase tracking-wider">
               <span className="flex items-center gap-1 bg-white/70 px-3.5 py-1.5 rounded-full border border-primary-love/10 shadow-sm">

@@ -227,3 +227,70 @@ const SettingsSchema = new mongoose.Schema({
 
 export const Settings = mongoose.model('Settings', SettingsSchema);
 
+// Love Letter Schema (Daily Love Letter System)
+const LoveLetterSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  subtitle: { type: String, default: '' },
+  content: { type: String, required: true },
+  category: { 
+    type: String, 
+    enum: [
+      'Love Letter', 
+      'Morning Motivation', 
+      'Workout Motivation', 
+      'Meal Reminder', 
+      'Water Reminder', 
+      'Sleep Reminder', 
+      'Special Day', 
+      'Birthday', 
+      'Anniversary', 
+      'Achievement', 
+      'Custom'
+    ], 
+    default: 'Love Letter' 
+  },
+  mood: { type: String, default: 'Romantic' },
+  emoji: { type: String, default: '❤️' },
+  bgTheme: { type: String, enum: ['Rose', 'Lavender', 'Cream', 'Midnight', 'Sunset'], default: 'Rose' },
+  fontStyle: { type: String, enum: ['Handwritten', 'Serif', 'Sans'], default: 'Handwritten' },
+  priority: { type: String, enum: ['Normal', 'High', 'Urgent'], default: 'Normal' },
+  coverImage: { type: String, default: '' },
+  music: { type: String, default: '' },
+  video: { type: String, default: '' },
+  voiceNote: { type: String, default: '' },
+  published: { type: Boolean, default: true },
+  deliveryOption: { type: String, enum: ['Immediate', 'Scheduled', 'Recurring'], default: 'Immediate' },
+  scheduledAt: { type: Date, default: null },
+  recurrence: { type: String, enum: ['None', 'Every Morning', 'Every Night', 'Weekly', 'Monthly'], default: 'None' },
+  readStatus: { type: String, enum: ['Unread', 'Read'], default: 'Unread' },
+  readAt: { type: Date, default: null },
+  favorite: { type: Boolean, default: false },
+  archived: { type: Boolean, default: false },
+  reaction: { type: String, enum: ['❤️', '😊', '🥹', '🌸', '⭐', 'None'], default: 'None' },
+  tags: [{ type: String }],
+  createdBy: { type: String, default: 'Boyfriend (Admin)' }
+}, { timestamps: true });
+
+export const LoveLetter = mongoose.model('LoveLetter', LoveLetterSchema);
+
+// User Profile & Settings Schema
+const UserProfileSchema = new mongoose.Schema({
+  name: { type: String, default: 'Sweetheart' },
+  birthday: { type: String, default: '2000-01-01' },
+  height: { type: Number, default: 165 },
+  weight: { type: Number, default: 58 },
+  targetWeight: { type: Number, default: 55 },
+  waterGoal: { type: Number, default: 8 },
+  stepGoal: { type: Number, default: 10000 },
+  workoutGoal: { type: Number, default: 30 },
+  sleepGoal: { type: Number, default: 8 },
+  preferredWakeTime: { type: String, default: '07:00' },
+  preferredBedtime: { type: String, default: '22:30' },
+  favoriteQuote: { type: String, default: 'Rest is where tomorrow begins.' },
+  theme: { type: String, default: 'pink' },
+  colorMode: { type: String, default: 'system' },
+  notifications: { type: Object, default: {} }
+}, { timestamps: true });
+
+export const UserProfile = mongoose.model('UserProfile', UserProfileSchema);
+

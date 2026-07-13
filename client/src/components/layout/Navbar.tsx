@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { NavLink, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 
@@ -14,33 +14,17 @@ const NAV_ITEMS = [
 ];
 
 export const Navbar: React.FC = () => {
-  const navigate = useNavigate();
-  const [clickCount, setClickCount] = useState(0);
-
-  const handleLogoClick = (e: React.MouseEvent) => {
-    const newCount = clickCount + 1;
-    setClickCount(newCount);
-
-    // Reset countdown timer
-    const timer = setTimeout(() => {
-      setClickCount(0);
-    }, 2500);
-
-    if (newCount >= 5) {
-      clearTimeout(timer);
-      e.preventDefault();
-      setClickCount(0);
-      navigate('/caregiver-portal');
-    }
-  };
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4 hidden md:block">
       <div className="max-w-7xl mx-auto flex items-center justify-between bg-glass border-glass shadow-glass rounded-full px-8 py-3 backdrop-blur-md relative overflow-hidden">
         {/* Top inner white glow border */}
         <div className="absolute inset-px rounded-full border border-white/40 pointer-events-none z-10" />
 
-        {/* Logo */}
-        <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 group relative z-20">
+        {/* Logo Link */}
+        <Link
+          to="/"
+          className="flex items-center gap-2 group relative z-20 select-none cursor-pointer"
+        >
           <motion.div
             whileHover={{ scale: 1.15, rotate: 10 }}
             transition={{ type: 'spring', stiffness: 300 }}
@@ -48,7 +32,7 @@ export const Navbar: React.FC = () => {
             <Heart className="w-6 h-6 text-primary-love fill-primary-love" />
           </motion.div>
           <span className="font-serif font-semibold text-lg tracking-wider text-text-dark group-hover:text-primary-love transition-colors">
-            Forever Us
+            Her Rhythm
           </span>
         </Link>
 

@@ -26,6 +26,7 @@ export const GlassCard: FC<GlassCardProps> = ({
     <motion.div
       className={cn(
         'bg-glass-card border-glass-subtle shadow-glass rounded-[28px] p-6 backdrop-blur-2xl transition-shadow duration-300 hover:shadow-glass-hover relative overflow-hidden',
+        props.onClick && 'cursor-pointer',
         className
       )}
       {...hoverAnimation}

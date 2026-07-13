@@ -7,7 +7,11 @@ import {
   Droplet,
   Moon,
   AlertTriangle,
-  Activity
+  Activity,
+  Mail,
+  Plus,
+  Trash2,
+  Send
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -70,9 +74,36 @@ export const CaregiverPortal: React.FC = () => {
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [daysCount, setDaysCount] = useState(14);
-  const [activeTab, setActiveTab] = useState<'timeline' | 'audit'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'audit' | 'letters'>('timeline');
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+
+  // Love Letters Admin State inside Caregiver Portal
+  const [letters, setLetters] = useState<any[]>([]);
+  const [letterAnalytics, setLetterAnalytics] = useState<any>(null);
+  const [lettersSubSection, setLettersSubSection] = useState<'Dashboard' | 'Create' | 'All' | 'Templates'>('Dashboard');
+  const [isSubmittingLetter, setIsSubmittingLetter] = useState(false);
+  const [letterSuccessAlert, setLetterSuccessAlert] = useState('');
+  const [letterErrorAlert, setLetterErrorAlert] = useState('');
+  const [formLetter, setFormLetter] = useState<any>({
+    title: '',
+    subtitle: '',
+    content: '',
+    category: 'Love Letter',
+    mood: 'Romantic',
+    emoji: '❤️',
+    bgTheme: 'Rose',
+    fontStyle: 'Handwritten',
+    priority: 'Normal',
+    coverImage: '',
+    video: '',
+    voiceNote: '',
+    published: true,
+    deliveryOption: 'Immediate',
+    scheduledAt: '',
+    recurrence: 'None',
+    tags: []
+  });
 
   const [verifyingPin, setVerifyingPin] = useState(false);
 
@@ -128,12 +159,25 @@ export const CaregiverPortal: React.FC = () => {
     }
   };
 
+  const loadLoveLettersAdmin = async () => {
+    try {
+      const res = await api.get('/api/letters');
+      if (res.data) setLetters(res.data);
+      const resAnalytics = await api.get('/api/letters/analytics');
+      if (resAnalytics.data) setLetterAnalytics(resAnalytics.data);
+    } catch (e) {
+      console.error('Failed to load love letters in caregiver portal:', e);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       if (activeTab === 'timeline') {
         loadCaregiverLogs();
-      } else {
+      } else if (activeTab === 'audit') {
         loadAuditLogs();
+      } else if (activeTab === 'letters') {
+        loadLoveLettersAdmin();
       }
     }
   }, [daysCount, isAuthenticated, activeTab]);
@@ -292,7 +336,7 @@ export const CaregiverPortal: React.FC = () => {
         )}
 
         {/* --- TAB SELECTORS --- */}
-        <div className="flex gap-4 border-b border-primary-love/10 pb-4 z-20 relative font-sans">
+        <div className="flex flex-wrap gap-4 border-b border-primary-love/10 pb-4 z-20 relative font-sans">
           <button
             onClick={() => setActiveTab('timeline')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -303,6 +347,18 @@ export const CaregiverPortal: React.FC = () => {
           >
             📅 Daily Self-Care Timeline
           </button>
+
+          <button
+            onClick={() => setActiveTab('letters')}
+            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'letters'
+                ? 'bg-primary-love text-white shadow-md'
+                : 'bg-white/50 border border-primary-love/10 text-text-sub hover:bg-white'
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5" /> 💌 Daily Love Letters Admin
+          </button>
+
           <button
             onClick={() => setActiveTab('audit')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -555,6 +611,351 @@ export const CaregiverPortal: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* --- LOVE LETTERS MANAGEMENT TAB SECTION --- */}
+        {activeTab === 'letters' && (
+          <div className="space-y-8">
+            {/* Sub-nav */}
+            <div className="flex flex-wrap gap-2 border-b border-primary-love/10 pb-4">
+              {(['Dashboard', 'Create', 'All', 'Templates'] as const).map((sec) => (
+                <button
+                  key={sec}
+                  onClick={() => setLettersSubSection(sec)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    lettersSubSection === sec
+                      ? 'bg-text-dark text-white shadow-sm'
+                      : 'bg-white/40 text-text-sub hover:text-text-dark border border-primary-love/10'
+                  }`}
+                >
+                  {sec}
+                </button>
+              ))}
+            </div>
+
+            {/* DASHBOARD */}
+            {lettersSubSection === 'Dashboard' && letterAnalytics && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                  <GlassCard animateHover={false} className="p-5">
+                    <span className="text-[10px] font-bold text-text-sub uppercase">Total Letters</span>
+                    <p className="text-3xl font-serif font-bold text-text-dark mt-1">{letterAnalytics.totalLetters}</p>
+                  </GlassCard>
+
+                  <GlassCard animateHover={false} className="p-5">
+                    <span className="text-[10px] font-bold text-text-sub uppercase">Published</span>
+                    <p className="text-3xl font-serif font-bold text-emerald-600 mt-1">{letterAnalytics.publishedCount}</p>
+                  </GlassCard>
+
+                  <GlassCard animateHover={false} className="p-5">
+                    <span className="text-[10px] font-bold text-text-sub uppercase">Read Rate</span>
+                    <p className="text-3xl font-serif font-bold text-primary-love mt-1">{letterAnalytics.readRate}%</p>
+                  </GlassCard>
+
+                  <GlassCard animateHover={false} className="p-5">
+                    <span className="text-[10px] font-bold text-text-sub uppercase">Favorited</span>
+                    <p className="text-3xl font-serif font-bold text-purple-600 mt-1">{letterAnalytics.favoritesCount}</p>
+                  </GlassCard>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  <GlassCard animateHover={false} className="space-y-4">
+                    <h3 className="text-lg font-serif font-bold text-text-dark">Reactions Breakdown</h3>
+                    <div className="grid grid-cols-5 gap-3 text-center">
+                      {['❤️', '😊', '🥹', '🌸', '⭐'].map((emoji) => (
+                        <div key={emoji} className="p-3 bg-pink-50/50 rounded-xl border border-pink-100">
+                          <span className="text-2xl block">{emoji}</span>
+                          <span className="text-xs font-bold text-text-dark mt-1 block">
+                            {letterAnalytics.reactionsMap?.[emoji] || 0}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </GlassCard>
+
+                  <GlassCard animateHover={false} className="space-y-4 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-lg font-serif font-bold text-text-dark">Quick Action</h3>
+                      <p className="text-xs text-text-sub mt-1">Publish a new daily love message or send reminders.</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setLettersSubSection('Create')}
+                        className="flex-1 py-3 bg-primary-love text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" /> Create Letter
+                      </button>
+                      <button
+                        onClick={() => setLettersSubSection('Templates')}
+                        className="flex-1 py-3 bg-white border border-primary-love/20 text-primary-love font-bold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        Templates
+                      </button>
+                    </div>
+                  </GlassCard>
+                </div>
+              </div>
+            )}
+
+            {/* CREATE */}
+            {lettersSubSection === 'Create' && (
+              <GlassCard animateHover={false} className="p-8 space-y-6">
+                <div className="border-b border-primary-love/10 pb-4">
+                  <h3 className="text-xl font-serif font-bold text-text-dark">Create New Love Letter</h3>
+                  <p className="text-xs text-text-sub">Write a custom message, select theme, mood, and delivery options.</p>
+                </div>
+
+                {letterSuccessAlert && (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-2xl flex items-center gap-2 animate-bounce">
+                    <span>{letterSuccessAlert}</span>
+                  </div>
+                )}
+
+                {letterErrorAlert && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl">
+                    <span>{letterErrorAlert}</span>
+                  </div>
+                )}
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!formLetter.title || !formLetter.content) {
+                      setLetterErrorAlert('Title and Love Message Content are required!');
+                      return;
+                    }
+                    try {
+                      setIsSubmittingLetter(true);
+                      setLetterErrorAlert('');
+                      const res = await api.post('/api/letters', formLetter);
+                      if (res.data) {
+                        setLetters((prev) => [res.data, ...prev]);
+                        setLetterSuccessAlert('❤️ Love Letter published successfully!');
+                        
+                        setFormLetter({
+                          title: '',
+                          subtitle: '',
+                          content: '',
+                          category: 'Love Letter',
+                          mood: 'Romantic',
+                          emoji: '❤️',
+                          bgTheme: 'Rose',
+                          fontStyle: 'Handwritten',
+                          priority: 'Normal',
+                          coverImage: '',
+                          video: '',
+                          voiceNote: '',
+                          published: true,
+                          deliveryOption: 'Immediate',
+                          scheduledAt: '',
+                          recurrence: 'None',
+                          tags: []
+                        });
+
+                        setTimeout(() => {
+                          setLetterSuccessAlert('');
+                          setLettersSubSection('All');
+                          loadLoveLettersAdmin();
+                        }, 1200);
+                      }
+                    } catch (err: any) {
+                      console.log('Error creating letter:', err);
+                      setLetterErrorAlert(err?.message || 'Failed to publish letter. Please check connection.');
+                    } finally {
+                      setIsSubmittingLetter(false);
+                    }
+                  }}
+                  className="space-y-6"
+                >
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-text-dark">Title *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Good Morning, My Sunshine ❤️"
+                        value={formLetter.title}
+                        onChange={(e) => setFormLetter({ ...formLetter, title: e.target.value })}
+                        className="w-full p-2.5 text-xs border border-primary-love/20 rounded-xl bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-text-dark">Subtitle / Note</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Start your day knowing you are cherished"
+                        value={formLetter.subtitle}
+                        onChange={(e) => setFormLetter({ ...formLetter, subtitle: e.target.value })}
+                        className="w-full p-2.5 text-xs border border-primary-love/20 rounded-xl bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-text-dark">Love Message Content *</label>
+                    <textarea
+                      required
+                      rows={5}
+                      placeholder="Write your heart out..."
+                      value={formLetter.content}
+                      onChange={(e) => setFormLetter({ ...formLetter, content: e.target.value })}
+                      className="w-full p-3 text-xs border border-primary-love/20 rounded-xl bg-white leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-text-dark">Category</label>
+                      <select
+                        value={formLetter.category}
+                        onChange={(e) => setFormLetter({ ...formLetter, category: e.target.value })}
+                        className="w-full p-2 text-xs border border-primary-love/20 rounded-xl bg-white"
+                      >
+                        <option>Love Letter</option>
+                        <option>Morning Motivation</option>
+                        <option>Workout Motivation</option>
+                        <option>Meal Reminder</option>
+                        <option>Water Reminder</option>
+                        <option>Sleep Reminder</option>
+                        <option>Special Day</option>
+                        <option>Birthday</option>
+                        <option>Anniversary</option>
+                        <option>Achievement</option>
+                        <option>Custom</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-text-dark">Emoji</label>
+                      <input
+                        type="text"
+                        value={formLetter.emoji}
+                        onChange={(e) => setFormLetter({ ...formLetter, emoji: e.target.value })}
+                        className="w-full p-2 text-xs border border-primary-love/20 rounded-xl bg-white text-center"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-text-dark">Theme</label>
+                      <select
+                        value={formLetter.bgTheme}
+                        onChange={(e) => setFormLetter({ ...formLetter, bgTheme: e.target.value })}
+                        className="w-full p-2 text-xs border border-primary-love/20 rounded-xl bg-white"
+                      >
+                        <option>Rose</option>
+                        <option>Lavender</option>
+                        <option>Cream</option>
+                        <option>Midnight</option>
+                        <option>Sunset</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-text-dark">Font</label>
+                      <select
+                        value={formLetter.fontStyle}
+                        onChange={(e) => setFormLetter({ ...formLetter, fontStyle: e.target.value })}
+                        className="w-full p-2 text-xs border border-primary-love/20 rounded-xl bg-white"
+                      >
+                        <option>Handwritten</option>
+                        <option>Serif</option>
+                        <option>Sans</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 border-t border-primary-love/10">
+                    <label className="flex items-center gap-2 text-xs font-bold text-text-dark cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formLetter.published}
+                        onChange={(e) => setFormLetter({ ...formLetter, published: e.target.checked })}
+                        className="w-4 h-4 text-primary-love rounded"
+                      />
+                      Publish Immediately
+                    </label>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingLetter}
+                      className="px-8 py-3 bg-primary-love text-white font-bold text-xs rounded-xl shadow-lg hover:bg-primary-love/90 cursor-pointer disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                    >
+                      <Send className="w-4 h-4" /> {isSubmittingLetter ? 'Publishing...' : 'Publish Love Letter'}
+                    </button>
+                  </div>
+                </form>
+              </GlassCard>
+            )}
+
+            {/* ALL */}
+            {lettersSubSection === 'All' && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-serif font-bold text-text-dark">Manage All Love Letters</h3>
+                <div className="space-y-3">
+                  {letters.map((l) => (
+                    <GlassCard key={l._id} animateHover={false} className="p-4 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{l.emoji}</span>
+                        <div>
+                          <h4 className="font-bold text-sm text-text-dark">{l.title}</h4>
+                          <span className="text-[10px] text-text-sub">{l.category} • Status: {l.readStatus}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (!window.confirm('Delete this letter?')) return;
+                          await api.delete(`/api/letters/${l._id}`);
+                          loadLoveLettersAdmin();
+                        }}
+                        className="p-2 border border-red-200 text-red-500 hover:bg-red-50 rounded-xl text-xs font-semibold cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </GlassCard>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TEMPLATES */}
+            {lettersSubSection === 'Templates' && (
+              <div className="grid md:grid-cols-2 gap-6">
+                {[
+                  { title: "Good Morning, My Love ❤️", category: "Morning Motivation", content: "Good morning, beautiful! I hope you woke up feeling rested and peaceful. Remember to sip a warm glass of water today. I love you so much.", emoji: "🌅" },
+                  { title: "Hydration Reminder 💧", category: "Water Reminder", content: "Here is your gentle love reminder to drink a full cup of water right now! Your body deserves all the nourishment today.", emoji: "💧" },
+                  { title: "Don't Forget Breakfast 🍳", category: "Meal Reminder", content: "Please make sure to eat a warm, wholesome breakfast. Fueling your energy keeps your hormone health in balance.", emoji: "🥐" },
+                  { title: "I Am So Proud of You 🏆", category: "Achievement", content: "Whatever you accomplished today—big or small—I am cheering for you from the bottom of my heart.", emoji: "⭐" },
+                  { title: "Sleep Peacefully, My Heart 🌙", category: "Sleep Reminder", content: "Put your phone away, dim the lights, and let go of today's worries. You did more than enough today. Sweet dreams!", emoji: "🌙" }
+                ].map((tpl, i) => (
+                  <GlassCard key={i} animateHover={false} className="p-6 space-y-4 flex flex-col justify-between">
+                    <div>
+                      <span className="text-2xl block mb-2">{tpl.emoji}</span>
+                      <h4 className="font-serif font-bold text-base text-text-dark">{tpl.title}</h4>
+                      <p className="text-xs text-text-sub italic mt-2">"{tpl.content}"</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setFormLetter({
+                          ...formLetter,
+                          title: tpl.title,
+                          category: tpl.category,
+                          content: tpl.content,
+                          emoji: tpl.emoji
+                        });
+                        setLettersSubSection('Create');
+                      }}
+                      className="w-full py-2.5 bg-primary-love text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                    >
+                      Use Template
+                    </button>
+                  </GlassCard>
+                ))}
+              </div>
+            )}
+
           </div>
         )}
 

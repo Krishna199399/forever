@@ -1,4 +1,4 @@
-# ❤️ Forever Us ❤️ - Private Wellness Companion
+# ❤️ Her Rhythm ❤️ - Private Wellness Companion
 
 A premium private MERN stack wellness journal and companion built by a boyfriend for his girlfriend. The application is designed to encourage healthy habits, track cycles, log workouts/meals, log sleep waves, and archive beautiful shared memories.
 
@@ -89,10 +89,10 @@ Follow these steps to deploy this application to a Linux VPS (e.g. Ubuntu) with 
 - MongoDB Atlas cluster URL.
 
 ### 2. Initial Setup
-Clone the repository to your web directory (e.g., `/var/www/forever-us`):
+Clone the repository to your web directory (e.g., `/var/www/her-rhythm`):
 ```bash
-git clone <your-repo-url> /var/www/forever-us
-cd /var/www/forever-us
+git clone <your-repo-url> /var/www/her-rhythm
+cd /var/www/her-rhythm
 ```
 
 ### 3. Server Configuration (.env)
@@ -134,8 +134,8 @@ cd ..
 ### 5. Configure Nginx & SSL
 Copy the project [nginx.conf](file:///d:/personal%20care/nginx.conf) to your Nginx sites configuration directory:
 ```bash
-sudo cp nginx.conf /etc/nginx/sites-available/forever-us
-sudo ln -s /etc/nginx/sites-available/forever-us /etc/nginx/sites-enabled/
+sudo cp nginx.conf /etc/nginx/sites-available/her-rhythm
+sudo ln -s /etc/nginx/sites-available/her-rhythm /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```

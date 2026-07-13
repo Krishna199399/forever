@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/common/GlassCard';
 import { AnimatedCheckbox } from '@/components/common/AnimatedCheckbox';
 import {
   Moon,
   Clock,
-  Music,
-  Play,
-  Pause,
-  Volume2,
+
   Heart,
   Activity,
   TrendingUp,
@@ -44,12 +42,7 @@ const BREATHING_TECHS = [
   { name: '5-5 Coherent Breathing', inhale: 5, hold1: 0, exhale: 5, hold2: 0, desc: 'Synchronizes heart rate variability to reduce stress.' }
 ];
 
-const NIGHT_SOUNDS = [
-  { name: 'Night Crickets', icon: '🦗', src: 'https://assets.mixkit.co/active_storage/sfx/2520/2520-84.wav' },
-  { name: 'Soft Ocean Waves', icon: '🌊', src: 'https://assets.mixkit.co/active_storage/sfx/2507/2507-84.wav' },
-  { name: 'Bedtime Rain Loop', icon: '🌧️', src: 'https://assets.mixkit.co/active_storage/sfx/2513/2513-84.wav' },
-  { name: 'Ambient Forest', icon: '🌲', src: 'https://assets.mixkit.co/active_storage/sfx/2519/2519-84.wav' }
-];
+
 
 const GRATITUDE_PROMPTS = [
   "What made you smile today?",
@@ -106,11 +99,7 @@ export const Sleep: React.FC = () => {
     ];
   });
 
-  // Sound machine states
-  const [activeSoundIdx, setActiveSoundIdx] = useState<number | null>(null);
-  const [audioPlaying, setAudioPlaying] = useState(false);
-  const [audioVolume, setAudioVolume] = useState(0.5);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
 
   // Guided breathing coach states
   const [breathingActive, setBreathingActive] = useState(false);
@@ -196,54 +185,7 @@ export const Sleep: React.FC = () => {
     }
   };
 
-  // Sound machine handlers
-  const handleSelectSound = (idx: number) => {
-    if (activeSoundIdx === idx) {
-      setAudioPlaying(!audioPlaying);
-    } else {
-      setActiveSoundIdx(idx);
-      setAudioPlaying(true);
-    }
-  };
 
-  useEffect(() => {
-    if (activeSoundIdx !== null) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      audioRef.current = new Audio(NIGHT_SOUNDS[activeSoundIdx].src);
-      audioRef.current.loop = true;
-      audioRef.current.volume = audioVolume;
-      if (audioPlaying) {
-        audioRef.current.play().catch((err) => console.log('Audio autoplay error:', err));
-      }
-    } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-    }
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-    };
-  }, [activeSoundIdx]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      if (audioPlaying) {
-        audioRef.current.play().catch((err) => console.log('Audio playback error:', err));
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [audioPlaying]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = audioVolume;
-    }
-  }, [audioVolume]);
 
   // Breathing intervals
   useEffect(() => {
@@ -602,62 +544,8 @@ export const Sleep: React.FC = () => {
           </div>
         </GlassCard>
 
-        {/* --- RELAXATION MUSIC & Guided Breathing Coach --- */}
-        <div className="grid md:grid-cols-2 gap-8">
-          
-          {/* Audio Player Card */}
-          <GlassCard animateHover={false} className="border-white/5 bg-slate-900/30 space-y-6">
-            <div>
-              <h3 className="text-lg font-serif font-bold text-white flex items-center gap-1.5">
-                <Music className="w-5 h-5 text-purple-400" /> Bedtime Relaxation Sounds
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">Play calming loops to mask environmental static.</p>
-            </div>
-
-            <div className="space-y-3">
-              {NIGHT_SOUNDS.map((sound, idx) => (
-                <div
-                  key={sound.name}
-                  onClick={() => handleSelectSound(idx)}
-                  className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
-                    activeSoundIdx === idx
-                      ? 'bg-purple-900/20 border-purple-500 text-white shadow-sm'
-                      : 'border-white/5 bg-white/5 hover:bg-white/10 text-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{sound.icon}</span>
-                    <span className="text-xs font-bold">{sound.name}</span>
-                  </div>
-                  
-                  <div className="p-2 rounded-full bg-white/5 text-purple-400 hover:bg-white/10">
-                    {activeSoundIdx === idx && audioPlaying ? (
-                      <Pause className="w-4 h-4 fill-purple-400 stroke-none" />
-                    ) : (
-                      <Play className="w-4 h-4 fill-purple-400 stroke-none" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Volume controls */}
-            {activeSoundIdx !== null && (
-              <div className="flex items-center gap-3 border-t border-white/5 pt-4">
-                <Volume2 className="w-4 h-4 text-purple-400" />
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={audioVolume}
-                  onChange={(e) => setAudioVolume(Number(e.target.value))}
-                  className="flex-1 h-1 bg-[#2D2245] rounded-lg appearance-none cursor-pointer accent-purple-400"
-                />
-                <span className="text-[10px] text-slate-400 font-bold">{Math.round(audioVolume * 100)}%</span>
-              </div>
-            )}
-          </GlassCard>
+        {/* --- Guided Breathing Coach --- */}
+        <div>
 
           {/* Breathing Coach Card */}
           <GlassCard animateHover={false} className="border-white/5 bg-slate-900/30 flex flex-col justify-between p-6">
@@ -871,68 +759,71 @@ export const Sleep: React.FC = () => {
       </div>
 
       {/* --- NIGHT COMPLETE BEDTIME CELEBRATION MODAL OVERLAY --- */}
-      <AnimatePresence>
-        {todayLog.routineCompleted && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-[#0E0B16]/90 backdrop-blur-lg flex items-center justify-center p-4"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {todayLog.routineCompleted && (
             <motion.div
-              initial={{ scale: 0.92, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.92, y: 20 }}
-              className="max-w-md w-full bg-[#161224] border border-purple-500/10 rounded-[32px] p-8 text-center space-y-6 relative overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-[#0E0B16]/90 backdrop-blur-lg flex items-center justify-center p-4"
             >
-              {/* Star sparkles */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {Array.from({ length: 20 }).map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-1.5 h-1.5 bg-yellow-200 rounded-full"
-                    style={{
-                      left: `${Math.random() * 80 + 10}%`,
-                      top: `-20px`,
-                    }}
-                    animate={{
-                      y: ['0vh', '50vh'],
-                      x: ['0px', `${(Math.random() - 0.5) * 60}px`],
-                      rotate: [0, 360],
-                    }}
-                    transition={{
-                      duration: Math.random() * 2 + 2,
-                      ease: 'easeOut',
-                    }}
-                  />
-                ))}
-              </div>
-
-              <div className="p-4 bg-purple-500/10 text-purple-400 rounded-full w-fit mx-auto animate-bounce">
-                <Moon className="w-8 h-8 text-purple-400 fill-purple-400/20" />
-              </div>
-              
-              <div className="space-y-3">
-                <h3 className="text-2xl font-serif font-bold text-white">Sleep peacefully ❤️</h3>
-                <p className="text-sm font-handwritten text-purple-300 leading-relaxed max-w-sm mx-auto">
-                  "Tomorrow is another chance to bloom."
-                </p>
-              </div>
-
-              <div className="p-4 bg-white/5 border border-white/5 rounded-2xl text-xs text-slate-400 leading-relaxed">
-                Routine checklist complete. Devices away, ambient sound playing, and sweet dreams ahead.
-              </div>
-
-              <button
-                onClick={() => setChecklist((prev: any) => prev.map((item: any) => ({ ...item, done: false })))}
-                className="w-full py-3 bg-purple-500 text-white text-xs font-semibold rounded-full hover:bg-purple-600 shadow-lg shadow-purple-500/20 cursor-pointer"
+              <motion.div
+                initial={{ scale: 0.92, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.92, y: 20 }}
+                className="max-w-md w-full bg-[#161224] border border-purple-500/10 rounded-[32px] p-8 text-center space-y-6 relative overflow-hidden"
               >
-                Reset Checklist
-              </button>
+                {/* Star sparkles */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  {Array.from({ length: 20 }).map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1.5 h-1.5 bg-yellow-200 rounded-full"
+                      style={{
+                        left: `${Math.random() * 80 + 10}%`,
+                        top: `-20px`,
+                      }}
+                      animate={{
+                        y: ['0vh', '50vh'],
+                        x: ['0px', `${(Math.random() - 0.5) * 60}px`],
+                        rotate: [0, 360],
+                      }}
+                      transition={{
+                        duration: Math.random() * 2 + 2,
+                        ease: 'easeOut',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <div className="p-4 bg-purple-500/10 text-purple-400 rounded-full w-fit mx-auto animate-bounce">
+                  <Moon className="w-8 h-8 text-purple-400 fill-purple-400/20" />
+                </div>
+                
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-serif font-bold text-white">Sleep peacefully ❤️</h3>
+                  <p className="text-sm font-handwritten text-purple-300 leading-relaxed max-w-sm mx-auto">
+                    "Tomorrow is another chance to bloom."
+                  </p>
+                </div>
+
+                <div className="p-4 bg-white/5 border border-white/5 rounded-2xl text-xs text-slate-400 leading-relaxed">
+                  Routine checklist complete. Devices away, rest mode active, and sweet dreams ahead.
+                </div>
+
+                <button
+                  onClick={() => setChecklist((prev: any) => prev.map((item: any) => ({ ...item, done: false })))}
+                  className="w-full py-3 bg-purple-500 text-white text-xs font-semibold rounded-full hover:bg-purple-600 shadow-lg shadow-purple-500/20 cursor-pointer"
+                >
+                  Reset Checklist
+                </button>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

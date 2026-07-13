@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/common/GlassCard';
 import {
@@ -477,146 +478,154 @@ export const Memories: React.FC = () => {
         </div>
 
         {/* --- LOVE LETTER DETAILS DIALOG MODAL --- */}
-        <AnimatePresence>
-          {zoomMemory && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
-            >
+        {createPortal(
+          <AnimatePresence>
+            {zoomMemory && (
               <motion.div
-                initial={{ scale: 0.93, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.93, y: 20 }}
-                className="max-w-lg w-full bg-white border border-primary-love/15 rounded-[32px] p-8 space-y-6 relative shadow-2xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setZoomMemory(null)}
+                className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4"
               >
-                {/* Close Button */}
-                <button
-                  onClick={() => setZoomMemory(null)}
-                  className="absolute top-4 right-4 p-2 text-text-sub hover:text-text-dark cursor-pointer"
+                <motion.div
+                  initial={{ scale: 0.93, y: 20 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.93, y: 20 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="max-w-lg w-full bg-white border border-primary-love/15 rounded-[32px] p-8 space-y-6 relative shadow-2xl"
                 >
-                  <X className="w-5 h-5" />
-                </button>
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setZoomMemory(null)}
+                    className="absolute top-4 right-4 p-2 text-text-sub hover:text-text-dark cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
 
-                {zoomMemory.type === 'Letter' ? (
-                  // Love Letter Layout
-                  <div className="space-y-4 font-sans text-xs">
-                    <div className="border-b border-primary-love/5 pb-3">
-                      <span className="text-[10px] font-bold text-primary-love uppercase tracking-widest bg-pink-50 px-2.5 py-0.5 rounded-full">
-                        Love Letter
-                      </span>
-                      <h3 className="text-2xl font-serif font-bold text-text-dark mt-3">{zoomMemory.letter?.title}</h3>
-                      <span className="text-[10px] text-text-sub block mt-1">Written on {zoomMemory.date}</span>
-                    </div>
-
-                    <p className="text-text-sub leading-relaxed whitespace-pre-line italic font-serif text-sm">
-                      "{zoomMemory.letter?.content}"
-                    </p>
-                  </div>
-                ) : (
-                  // Polaroid details layout
-                  <div className="space-y-4">
-                    {zoomMemory.photos && zoomMemory.photos.length > 0 && (
-                      <div className="aspect-video rounded-xl bg-slate-100 overflow-hidden border border-black/5 relative">
-                        <img src={zoomMemory.photos[0]} alt={zoomMemory.title} className="w-full h-full object-cover" />
+                  {zoomMemory.type === 'Letter' ? (
+                    // Love Letter Layout
+                    <div className="space-y-4 font-sans text-xs">
+                      <div className="border-b border-primary-love/5 pb-3">
+                        <span className="text-[10px] font-bold text-primary-love uppercase tracking-widest bg-pink-50 px-2.5 py-0.5 rounded-full">
+                          Love Letter
+                        </span>
+                        <h3 className="text-2xl font-serif font-bold text-text-dark mt-3">{zoomMemory.letter?.title}</h3>
+                        <span className="text-[10px] text-text-sub block mt-1">Written on {zoomMemory.date}</span>
                       </div>
-                    )}
-                    
-                    <div className="border-b border-primary-love/5 pb-3">
-                      <span className="text-[10px] font-bold text-primary-love bg-pink-50 border border-primary-love/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        {zoomMemory.collectionName}
-                      </span>
-                      <h3 className="text-xl font-serif font-bold text-text-dark mt-2">{zoomMemory.title}</h3>
-                      <span className="text-[10px] text-text-sub block mt-1">Logged on {zoomMemory.date}</span>
-                    </div>
 
-                    <p className="text-xs text-text-sub leading-relaxed">{zoomMemory.description}</p>
-                    
-                    {zoomMemory.location && (
-                      <span className="text-[10px] font-semibold text-text-sub flex items-center gap-1 pt-1">
-                        <MapPin className="w-3.5 h-3.5 text-primary-love" /> {zoomMemory.location}
-                      </span>
-                    )}
-                  </div>
-                )}
+                      <p className="text-text-sub leading-relaxed whitespace-pre-line italic font-serif text-sm">
+                        "{zoomMemory.letter?.content}"
+                      </p>
+                    </div>
+                  ) : (
+                    // Polaroid details layout
+                    <div className="space-y-4">
+                      {zoomMemory.photos && zoomMemory.photos.length > 0 && (
+                        <div className="aspect-video rounded-xl bg-slate-100 overflow-hidden border border-black/5 relative">
+                          <img src={zoomMemory.photos[0]} alt={zoomMemory.title} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      
+                      <div className="border-b border-primary-love/5 pb-3">
+                        <span className="text-[10px] font-bold text-primary-love bg-pink-50 border border-primary-love/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          {zoomMemory.collectionName}
+                        </span>
+                        <h3 className="text-xl font-serif font-bold text-text-dark mt-2">{zoomMemory.title}</h3>
+                        <span className="text-[10px] text-text-sub block mt-1">Logged on {zoomMemory.date}</span>
+                      </div>
+
+                      <p className="text-xs text-text-sub leading-relaxed">{zoomMemory.description}</p>
+                      
+                      {zoomMemory.location && (
+                        <span className="text-[10px] font-semibold text-text-sub flex items-center gap-1 pt-1">
+                          <MapPin className="w-3.5 h-3.5 text-primary-love" /> {zoomMemory.location}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
 
         {/* --- FULLSCREEN SLIDESHOW PLAYER OVERLAY --- */}
-        <AnimatePresence>
-          {slideshowOpen && photoMemories.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-[#0E0B16] flex flex-col justify-between p-8"
-            >
-              {/* Close slides */}
-              <button
-                onClick={() => setSlideshowOpen(false)}
-                className="absolute top-6 right-6 p-2 text-white/60 hover:text-white cursor-pointer z-50"
+        {createPortal(
+          <AnimatePresence>
+            {slideshowOpen && photoMemories.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-[#0E0B16] flex flex-col justify-between p-8"
               >
-                <X className="w-6 h-6" />
-              </button>
+                {/* Close slides */}
+                <button
+                  onClick={() => setSlideshowOpen(false)}
+                  className="absolute top-6 right-6 p-2 text-white/60 hover:text-white cursor-pointer z-50"
+                >
+                  <X className="w-6 h-6" />
+                </button>
 
-              <div className="flex-1 flex items-center justify-center">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={slideshowIdx}
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    className="max-w-2xl text-center space-y-6"
+                <div className="flex-1 flex items-center justify-center">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={slideshowIdx}
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      className="max-w-2xl text-center space-y-6"
+                    >
+                      <div className="aspect-video bg-white/5 border border-white/10 rounded-2xl overflow-hidden relative max-h-[60vh]">
+                        <img
+                          src={photoMemories[slideshowIdx].photos?.[0]}
+                          alt={photoMemories[slideshowIdx].title}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-serif text-white font-bold">{photoMemories[slideshowIdx].title}</h3>
+                        <p className="text-xs text-slate-400 max-w-md mx-auto">{photoMemories[slideshowIdx].description}</p>
+                      </div>
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                {/* Controls footer */}
+                <div className="flex justify-between items-center max-w-md w-full mx-auto pb-4 z-40">
+                  <button
+                    onClick={() => {
+                      setSlideshowIdx((curr) => (curr === 0 ? photoMemories.length - 1 : curr - 1));
+                    }}
+                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-full cursor-pointer"
                   >
-                    <div className="aspect-video bg-white/5 border border-white/10 rounded-2xl overflow-hidden relative max-h-[60vh]">
-                      <img
-                        src={photoMemories[slideshowIdx].photos?.[0]}
-                        alt={photoMemories[slideshowIdx].title}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-serif text-white font-bold">{photoMemories[slideshowIdx].title}</h3>
-                      <p className="text-xs text-slate-400 max-w-md mx-auto">{photoMemories[slideshowIdx].description}</p>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
 
-              {/* Controls footer */}
-              <div className="flex justify-between items-center max-w-md w-full mx-auto pb-4 z-40">
-                <button
-                  onClick={() => {
-                    setSlideshowIdx((curr) => (curr === 0 ? photoMemories.length - 1 : curr - 1));
-                  }}
-                  className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-full cursor-pointer"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
+                  <button
+                    onClick={() => setSlideshowActive(!slideshowActive)}
+                    className="px-6 py-2 bg-primary-love text-white rounded-full text-xs font-semibold hover:bg-primary-love/90 shadow-md cursor-pointer flex items-center gap-1"
+                  >
+                    {slideshowActive ? <Pause className="w-4 h-4 fill-white stroke-none" /> : <Play className="w-4 h-4 fill-white stroke-none" />}
+                    {slideshowActive ? 'Pause Loop' : 'Play Loop'}
+                  </button>
 
-                <button
-                  onClick={() => setSlideshowActive(!slideshowActive)}
-                  className="px-6 py-2 bg-primary-love text-white rounded-full text-xs font-semibold hover:bg-primary-love/90 shadow-md cursor-pointer flex items-center gap-1"
-                >
-                  {slideshowActive ? <Pause className="w-4 h-4 fill-white stroke-none" /> : <Play className="w-4 h-4 fill-white stroke-none" />}
-                  {slideshowActive ? 'Pause Loop' : 'Play Loop'}
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSlideshowIdx((curr) => (curr >= photoMemories.length - 1 ? 0 : curr + 1));
-                  }}
-                  className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-full cursor-pointer"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <button
+                    onClick={() => {
+                      setSlideshowIdx((curr) => (curr >= photoMemories.length - 1 ? 0 : curr + 1));
+                    }}
+                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-full cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
 
         {/* --- PRIVATE SETTINGS / ADD MEMORIES COLLAPSIBLE (BOYFRIEND DASHBOARD) --- */}
         <GlassCard animateHover={false} className="border border-red-100 bg-red-50/5">

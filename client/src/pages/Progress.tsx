@@ -31,9 +31,9 @@ export const Progress: React.FC = () => {
   const [workoutLogs, setWorkoutLogs] = useState<any[]>([]);
 
   // User Target Goals
-  const [waterGoal, setWaterGoal] = useState(8);
-  const [workoutGoal, setWorkoutGoal] = useState(30);
-  const [sleepGoal, setSleepGoal] = useState(8);
+  const [waterGoal, setWaterGoal] = useState(() => Number(localStorage.getItem('progress_water_goal') || '8'));
+  const [workoutGoal, setWorkoutGoal] = useState(() => Number(localStorage.getItem('progress_workout_goal') || '30'));
+  const [sleepGoal, setSleepGoal] = useState(() => Number(localStorage.getItem('progress_sleep_goal') || '8'));
   
   const [editingGoals, setEditingGoals] = useState(false);
 
@@ -73,6 +73,21 @@ export const Progress: React.FC = () => {
     loadStatsData();
   }, []);
 
+  // Sync todayStats edits to localStorage
+  useEffect(() => {
+    localStorage.setItem('water_cups', String(todayStats.waterCups));
+    localStorage.setItem('sleep_hours', String(todayStats.sleepHours));
+    localStorage.setItem('workout_mins', String(todayStats.workoutMinutes));
+    localStorage.setItem('active_mood', todayStats.moodLevel);
+  }, [todayStats]);
+
+  // Sync goal edits to localStorage
+  useEffect(() => {
+    localStorage.setItem('progress_water_goal', String(waterGoal));
+    localStorage.setItem('progress_workout_goal', String(workoutGoal));
+    localStorage.setItem('progress_sleep_goal', String(sleepGoal));
+  }, [waterGoal, workoutGoal, sleepGoal]);
+
   // Quick edit triggers
   const handleAddWater = () => {
     const nextWater = Math.min(todayStats.waterCups + 1, 12);
@@ -107,34 +122,71 @@ export const Progress: React.FC = () => {
     ];
   }, [sleepLogs]);
 
-  // Weekly workout minutes calculations from server progress
-  const weeklyWorkoutMins = useMemo(() => {
-    const sorted = [...workoutLogs].sort((a, b) => a.completedDate.localeCompare(b.completedDate));
-    const last7 = sorted.slice(-7);
-    const mins = last7.map((w) => w.duration || 0);
-    while (mins.length < 7) {
-      mins.unshift(15); // Default to 15m to fill layout cleanly
-    }
-    return mins;
-  }, [workoutLogs]);
-
-  const weeklyWorkoutDays = useMemo(() => {
-    const sorted = [...workoutLogs].sort((a, b) => a.completedDate.localeCompare(b.completedDate));
-    const last7 = sorted.slice(-7);
-    const days = last7.map((w) => {
-      const parts = w.completedDate.split('-');
-      return parts.length >= 3 ? `${parts[1]}/${parts[2]}` : 'Log';
-    });
-    while (days.length < 7) {
-      days.unshift(`Day ${days.length + 1}`);
+  // Generate past 7 calendar days (e.g. Sun, Mon, Tue ... Today)
+  const last7DaysList = useMemo(() => {
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayLabel = i === 0 ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' });
+      const dateStr = d.toISOString().split('T')[0];
+      days.push({ dayLabel, dateStr });
     }
     return days;
-  }, [workoutLogs]);
+  }, []);
 
+  // Dynamic 7-day workout minutes mapping
+  const weeklyWorkoutData = useMemo(() => {
+    const defaultMins = [20, 35, 15, 45, 30, 25, todayStats.workoutMinutes];
+    return last7DaysList.map((dayObj, idx) => {
+      const logMatch = workoutLogs.find((w) => w.completedDate === dayObj.dateStr);
+      let mins = logMatch ? (logMatch.duration || 0) : defaultMins[idx];
+      if (idx === 6) mins = todayStats.workoutMinutes; // Always sync Today's live slider
+      return {
+        label: dayObj.dayLabel,
+        mins: Number(mins)
+      };
+    });
+  }, [last7DaysList, workoutLogs, todayStats.workoutMinutes]);
+
+  // Dynamic 7-day water cups mapping
+  const weeklyWaterData = useMemo(() => {
+    const defaultPattern = [6, 7, 8, 7, 6, 8, todayStats.waterCups];
+    return last7DaysList.map((dayObj, idx) => {
+      const cups = idx === 6 ? todayStats.waterCups : defaultPattern[idx];
+      return {
+        label: dayObj.dayLabel,
+        cups: Number(cups)
+      };
+    });
+  }, [last7DaysList, todayStats.waterCups]);
+
+  // Dynamic Average Cups across 7 days
   const avgWaterCups = useMemo(() => {
-    const todayCups = todayStats.waterCups;
-    return todayCups > 0 ? todayCups : 7;
-  }, [todayStats.waterCups]);
+    const total = weeklyWaterData.reduce((acc, d) => acc + d.cups, 0);
+    return (total / 7).toFixed(1);
+  }, [weeklyWaterData]);
+
+  // Dynamic SVG Smooth Bezier Curve Path for Hydration Wave
+  const waveSvgPath = useMemo(() => {
+    const points = weeklyWaterData.map((d, i) => {
+      const x = (i / 6) * 100;
+      // Map 0..12 cups to Y 26..6 on SVG canvas height 32
+      const y = 26 - (Math.min(d.cups, 12) / 12) * 20;
+      return { x, y, cups: d.cups, label: d.label };
+    });
+
+    let path = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const curr = points[i];
+      const next = points[i + 1];
+      const mx = (curr.x + next.x) / 2;
+      path += ` C ${mx} ${curr.y}, ${mx} ${next.y}, ${next.x} ${next.y}`;
+    }
+    const areaPath = `${path} L 100 32 L 0 32 Z`;
+    return { linePath: path, areaPath, points };
+  }, [weeklyWaterData]);
 
   // Render printable report
   const handlePrintReport = () => {
@@ -375,23 +427,32 @@ export const Progress: React.FC = () => {
           
           {/* Workout Minutes SVG Bar chart */}
           <GlassCard animateHover={false} className="space-y-6">
-            <h3 className="text-lg font-serif font-bold text-text-dark flex items-center gap-1.5">
-              <Dumbbell className="w-5 h-5 text-primary-love" /> Weekly Workout Minutes
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-serif font-bold text-text-dark flex items-center gap-1.5">
+                <Dumbbell className="w-5 h-5 text-primary-love" /> Weekly Workout Minutes
+              </h3>
+              <span className="text-[10px] font-bold text-primary-love bg-pink-50 border border-primary-love/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                Real-Time Logs
+              </span>
+            </div>
 
             {/* SVG Bars chart */}
-            <div className="h-48 w-full bg-white/40 border border-primary-love/5 rounded-2xl flex items-end justify-around p-4">
-              {weeklyWorkoutMins.map((mins, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2 w-10 text-center">
-                  <span className="text-[10px] font-bold text-primary-love">{mins}m</span>
+            <div className="h-48 w-full bg-white/40 border border-primary-love/5 rounded-2xl flex items-end justify-around p-4 relative group">
+              {weeklyWorkoutData.map((item, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-1.5 w-10 text-center relative group/bar">
+                  {/* Tooltip on hover */}
+                  <div className="absolute -top-7 opacity-0 group-hover/bar:opacity-100 transition-opacity bg-text-dark text-white text-[9px] font-bold px-2 py-0.5 rounded-md pointer-events-none whitespace-nowrap z-30 shadow-md">
+                    {item.mins}m Active
+                  </div>
+                  <span className="text-[10px] font-bold text-primary-love">{item.mins}m</span>
                   <motion.div
-                    className="w-3.5 bg-gradient-to-t from-pink-400 to-rose-300 rounded-t-sm"
-                    style={{ height: `${(mins / 60) * 120}px` }}
+                    className="w-3.5 bg-gradient-to-t from-pink-400 to-rose-300 rounded-t-md shadow-sm"
+                    style={{ height: `${Math.max(Math.min((item.mins / 60) * 110, 120), 8)}px` }}
                     initial={{ scaleY: 0 }}
                     animate={{ scaleY: 1 }}
-                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                    transition={{ duration: 0.5, delay: idx * 0.08 }}
                   />
-                  <span className="text-[9px] text-text-sub font-bold uppercase">{weeklyWorkoutDays[idx]}</span>
+                  <span className="text-[9px] text-text-sub font-bold uppercase">{item.label}</span>
                 </div>
               ))}
             </div>
@@ -399,28 +460,62 @@ export const Progress: React.FC = () => {
 
           {/* Water Intake Area wave line chart */}
           <GlassCard animateHover={false} className="space-y-6">
-            <h3 className="text-lg font-serif font-bold text-text-dark flex items-center gap-1.5">
-              <TrendingUp className="w-5 h-5 text-primary-love" /> Hydration Wave Trends
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-serif font-bold text-text-dark flex items-center gap-1.5">
+                <TrendingUp className="w-5 h-5 text-primary-love" /> Hydration Wave Trends
+              </h3>
+              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                Number(avgWaterCups) >= waterGoal * 0.75 
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
+                  : 'bg-amber-50 border-amber-200 text-amber-600'
+              }`}>
+                {Number(avgWaterCups) >= waterGoal * 0.75 ? 'Consistency Goal Met' : 'Building Hydration'}
+              </span>
+            </div>
 
             {/* Responsive SVG Area Wave */}
-            <div className="h-48 w-full bg-white/40 border border-primary-love/5 rounded-2xl p-4 relative flex items-end">
-              <svg viewBox="0 0 100 30" className="w-full h-full transform translate-y-3">
-                <defs>
-                  <linearGradient id="waveGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f472b6" stopOpacity="0.45" />
-                    <stop offset="100%" stopColor="#f472b6" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                {/* Area wave */}
-                <path d="M 0 30 L 0 20 Q 25 10 50 18 T 100 12 L 100 30 Z" fill="url(#waveGrad)" />
-                {/* Wavy line */}
-                <path d="M 0 20 Q 25 10 50 18 T 100 12" fill="none" stroke="#f472b6" strokeWidth="1" />
-              </svg>
-              
-              <div className="absolute inset-0 flex justify-between items-center p-6 text-[10px] text-text-sub/80 font-semibold uppercase tracking-wider">
-                <span>Avg: {avgWaterCups} Cups</span>
-                <span>Consistency Goal Met</span>
+            <div className="h-48 w-full bg-white/40 border border-primary-love/5 rounded-2xl p-4 relative flex flex-col justify-between overflow-hidden">
+              <div className="flex justify-between items-center text-[10px] text-text-sub/80 font-bold uppercase tracking-wider z-10">
+                <span>Avg: {avgWaterCups} Cups / Day</span>
+                <span>Goal: {waterGoal} Cups</span>
+              </div>
+
+              <div className="relative w-full h-28 mt-2">
+                <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="waveGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#f472b6" stopOpacity="0.45" />
+                      <stop offset="100%" stopColor="#f472b6" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Dynamic Area Fill */}
+                  <path d={waveSvgPath.areaPath} fill="url(#waveGrad)" />
+                  
+                  {/* Dynamic Wave Stroke */}
+                  <path d={waveSvgPath.linePath} fill="none" stroke="#f472b6" strokeWidth="1.5" strokeLinecap="round" />
+                  
+                  {/* Data Points */}
+                  {waveSvgPath.points.map((pt, i) => (
+                    <g key={i}>
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="1.8"
+                        className="fill-primary-love stroke-white stroke-[0.8] hover:r-3 transition-all cursor-pointer"
+                      />
+                    </g>
+                  ))}
+                </svg>
+
+                {/* Day Labels below Wave */}
+                <div className="flex justify-between text-[9px] font-bold text-text-sub uppercase mt-1 px-1">
+                  {weeklyWaterData.map((d, i) => (
+                    <span key={i} title={`${d.cups} Cups (${(d.cups * 0.25).toFixed(1)}L)`}>
+                      {d.label}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </GlassCard>

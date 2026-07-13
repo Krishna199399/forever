@@ -4,7 +4,7 @@
 set -e
 
 echo "=========================================="
-echo "🚀 Starting Deployment for Forever Us"
+echo "🚀 Starting Deployment for Her Rhythm"
 echo "=========================================="
 
 # 1. Pull latest code

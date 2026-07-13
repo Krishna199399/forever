@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, Compass, Dumbbell, Apple, Heart, TrendingUp } from 'lucide-react';
 
@@ -13,23 +13,47 @@ const MOBILE_NAV_ITEMS = [
 ];
 
 export const Footer: React.FC = () => {
+  const navigate = useNavigate();
+  const [clickCount, setClickCount] = useState(0);
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const nextCount = clickCount + 1;
+    setClickCount(nextCount);
+
+    const timer = setTimeout(() => {
+      setClickCount(0);
+    }, 2000);
+
+    if (nextCount >= 3) {
+      clearTimeout(timer);
+      setClickCount(0);
+      navigate('/caregiver-portal');
+    }
+  };
+
   return (
     <>
       {/* Desktop Footer (Static) */}
       <footer className="w-full py-12 px-6 mt-auto hidden md:block border-t border-primary-love/10 bg-white/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-4 text-center">
-          <div className="flex items-center gap-1.5 text-text-sub font-serif">
+          <div className="flex items-center gap-2 text-text-sub font-serif select-none">
             <span>Built with love, one day at a time</span>
+            
+            {/* Secret 3-Click Heart Icon for Admin Entry */}
             <motion.span
+              onClick={handleHeartClick}
+              whileHover={{ scale: 1.3 }}
               animate={{ scale: [1, 1.25, 1] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-              className="inline-block text-primary-love"
+              className="inline-block text-primary-love cursor-pointer p-1"
+              title="Built with love"
             >
               ❤️
             </motion.span>
           </div>
-          <p className="text-xs text-text-sub/70 tracking-wide font-sans">
-            Forever Us &copy; {new Date().getFullYear()} &bull; For the most beautiful girl in the world.
+          <p className="text-xs text-text-sub/70 tracking-wide font-sans flex items-center justify-center gap-2">
+            <span>Her Rhythm &copy; {new Date().getFullYear()} &bull; For the most beautiful girl in the world.</span>
           </p>
         </div>
       </footer>
@@ -82,3 +106,5 @@ export const Footer: React.FC = () => {
     </>
   );
 };
+
+export default Footer;
