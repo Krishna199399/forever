@@ -620,15 +620,23 @@ app.delete('/api/memories/:id', async (req, res) => {
 
 // PIN Verification — checks against server-side env var, PIN never leaves the server
 app.post('/api/caregiver/verify-pin', (req, res) => {
-  const { pin } = req.body;
-  const correctPin = process.env.CAREGIVER_PIN || '5678';
-  if (!pin) {
-    return res.status(400).json({ error: 'PIN is required.' });
+  try {
+    const pin = req.body && req.body.pin ? String(req.body.pin).trim() : '';
+    const correctPin = String(process.env.CAREGIVER_PIN || '5678').trim();
+    
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN is required.' });
+    }
+    
+    if (pin === correctPin) {
+      return res.json({ success: true });
+    }
+    
+    return res.status(401).json({ success: false, error: 'Incorrect PIN. Access Denied.' });
+  } catch (error) {
+    console.error('Verify PIN Error:', error);
+    return res.status(500).json({ error: 'Failed to verify PIN' });
   }
-  if (pin === correctPin) {
-    return res.json({ success: true });
-  }
-  return res.status(401).json({ success: false, error: 'Incorrect PIN. Access Denied.' });
 });
 
 app.get('/api/caregiver/activities', async (req, res) => {
@@ -703,13 +711,18 @@ app.get('/api/caregiver/activities', async (req, res) => {
 // --- USER AUDIT LOG ROUTES ---
 app.post('/api/user/audit', async (req, res) => {
   try {
-    const { action, category, details } = req.body;
+    const { action, category, details } = req.body || {};
     if (!action || !category) {
       return res.status(400).json({ error: 'Action and category are required' });
     }
-    const log = await AuditLog.create({ action, category, details });
+    const log = await AuditLog.create({
+      action: String(action),
+      category: String(category),
+      details: details ? String(details) : ''
+    });
     res.status(201).json(log);
   } catch (error) {
+    console.error('Audit Log Create Error:', error);
     res.status(500).json({ error: 'Failed to create audit log' });
   }
 });
@@ -720,6 +733,7 @@ app.get('/api/caregiver/audit', async (req, res) => {
     const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(limit);
     res.json(logs);
   } catch (error) {
+    console.error('Audit Log Fetch Error:', error);
     res.status(500).json({ error: 'Failed to fetch audit logs' });
   }
 });
